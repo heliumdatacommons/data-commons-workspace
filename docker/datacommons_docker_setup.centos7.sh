@@ -61,11 +61,8 @@ export VENV=~/venv
 python3.6 -m venv $VENV
 cd $VENV
 source bin/activate
-# PyPI stars is out of date
-#pip install stars
-git clone https://github.com/stevencox/stars.git
-cd stars/cluster/src && pip install . && cd $VENV
-
+pip install stars
+# install cwltool fork
 git clone https://github.com/stevencox/cwltool.git
 cd cwltool && pip install . && cd $VENV
 pip install jupyter
