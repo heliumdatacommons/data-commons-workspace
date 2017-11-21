@@ -1,0 +1,8 @@
+{
+    "irods_port": 1247,
+    "irods_host": "stars-dw1.edc.renci.org",
+    "irods_home": "/tempZone/home/rods",
+    "irods_cwd": "/tempZone/home/rods",
+    "irods_user_name": "rods",
+    "irods_zone_name": "tempZone"
+}
