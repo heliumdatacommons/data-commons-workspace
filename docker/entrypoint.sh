@@ -1,6 +1,7 @@
 #!/bin/bash
 cd ~/
-source ~/.bashrc
+#source ~/.bashrc
+
 
 if [ ! -f ~/.irods/.irodsA ]; then
     # irods not initialized
@@ -13,3 +14,8 @@ fi
 
 cd ~/venv
 source bin/activate
+
+jupyter notebook --ip=0.0.0.0 --no-browser
+
+# uncomment to drop back to bash if jupyter notebook is terminated
+#/bin/bash -i

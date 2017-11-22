@@ -35,7 +35,7 @@ fi
 
 #TODO possibly use ansible variable substitution here
 if [ -z "$IRODS_PASSWORD" ]; then
-    echo "irods filesystem will not be authenticated automatically"
+    echo "irods filesystem will not be authenticated+mounted automatically"
     echo "Set password with 'export IRODS_PASSWORD=\"<your-password>\"'"
 else
     # run iinit in tty mode so we can send password on stdin

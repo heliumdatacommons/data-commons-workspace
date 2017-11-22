@@ -10,6 +10,16 @@ The above command will create an image with an entrypoint into the python virtua
 
 To build the authentication directly into the image beforehand so it can more quickly be run without re-authenticating each time, run:
 
-    docker build -t datacommons:latest --build-args IRODS_PASSWORD=<your-password> .
+    docker build -t datacommons:latest --build-arg IRODS_PASSWORD=<your-password> .
 
 Where <your-password> is the password for the irods user account specified in the irods\_environment section of datacommons\_docker\_setup.centos7.sh
+
+This docker image uses the FUSE module to mount irods, which requires CAP_SYS_ADMIN and access to the fuse device.  These are disabled by docker by default.
+
+To reenable and run the image with limited permissions:
+
+    docker run -it --cap-add=SYS_ADMIN --device=/dev/fuse --rm -p 8888:8888 datacommons
+
+or run with complete permissions:
+
+    docker run -it --privileged --rm -p 8888:8888 datacommons
