@@ -1,4 +1,4 @@
-FROM centosupdated
+FROM centos:centos7
 ARG IRODS_PASSWORD=""
 
 RUN yum install -y sudo
