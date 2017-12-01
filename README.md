@@ -23,3 +23,14 @@ To reenable and run the image with limited permissions:
 or run with complete permissions:
 
     docker run -it --privileged --rm -p 8888:8888 datacommons
+
+This will start up a jupyter notebook instance inside the virtual environment, and attach stdout to the current terminal.
+
+To attach a new shell to the container in the virtualenvironment, get the container id with:
+
+    docker ps -a
+
+And run:
+
+    docker exec -it <container-id> venv
+
