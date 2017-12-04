@@ -18,7 +18,7 @@ This docker image uses the FUSE module to mount irods, which requires CAP_SYS_AD
 
 To reenable and run the image with limited permissions:
 
-    docker run -it --cap-add=SYS_ADMIN --device=/dev/fuse --rm -p 8888:8888 datacommons
+    docker run -it --cap-add=SYS_ADMIN --device=/dev/fuse --rm -p 8888:8888 --name dc_container datacommons
 
 or run with complete permissions:
 
@@ -26,11 +26,6 @@ or run with complete permissions:
 
 This will start up a jupyter notebook instance inside the virtual environment, and attach stdout to the current terminal.
 
-To attach a new shell to the container in the virtualenvironment, get the container id with:
+Since we specified a container name, we can attach a new shell to the container in the virtualenvironment, using that name and the command venv, which is an interactive entrypoint script in the container:
 
-    docker ps -a
-
-And run:
-
-    docker exec -it <container-id> venv
-
+    docker exec -it dc_container venv
