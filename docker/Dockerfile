@@ -15,7 +15,7 @@ WORKDIR /home/dockeruser
 COPY ./entrypoint.sh /home/dockeruser/entrypoint.sh
 RUN sudo chmod 444 /home/dockeruser/entrypoint.sh
 
-EXPOSE 8888
+EXPOSE 8888 8080
 
 COPY sparkmagic.config.json /home/dockeruser/sparkmagic.config.json
 COPY datacommons_docker_setup.centos7.sh /home/dockeruser/datacommons_docker_setup.centos7.sh
