@@ -17,6 +17,7 @@ RUN sudo chmod 444 /home/dockeruser/entrypoint.sh
 
 EXPOSE 8888
 
+COPY sparkmagic.config.json /home/dockeruser/sparkmagic.config.json
 COPY datacommons_docker_setup.centos7.sh /home/dockeruser/datacommons_docker_setup.centos7.sh
 RUN bash datacommons_docker_setup.centos7.sh
 
