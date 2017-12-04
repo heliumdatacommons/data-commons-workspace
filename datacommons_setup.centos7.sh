@@ -19,7 +19,7 @@ fi
 if [ ! -d ~/.irods ]; then mkdir ~/.irods; fi
 echo '{
     "irods_port": 1247,
-    "irods_host": "stars-dw1.edc.renci.org",
+    "irods_host": "stars-fuse.renci.org",
     "irods_user_name": "rods",
     "irods_zone_name": "tempZone"
 }' > ~/.irods/irods_environment.json
@@ -42,6 +42,10 @@ else
     echo "$IRODS_PASSWORD" | iinit -e
     echo
 
+    # if mounted, unmount
+    if mount | grep "irodsFs.*${IRODS_MOUNT}"; then
+        fusermount -u "$IRODS_MOUNT"
+    fi
     # if not mounted, mount
     if ! mount | grep "irodsFs.*${IRODS_MOUNT}"; then
         irodsFs -onocache -o allow_other $IRODS_MOUNT
@@ -57,10 +61,10 @@ else
 fi
 
 # set up python virtualenv
-python3.6 -m venv ~/venv
-cd ~/venv
-source bin/activate
-pip install stars
-git clone https://github.com/stevencox/cwltool.git
-cd cwltool && pip install . && cd ..
-pip install jupyter
+#python3.6 -m venv ~/venv
+#cd ~/venv
+#source bin/activate
+#pip install stars
+#git clone https://github.com/stevencox/cwltool.git
+#cd cwltool && pip install . && cd ..
+#pip install jupyter

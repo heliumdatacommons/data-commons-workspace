@@ -23,7 +23,7 @@ fi
 if [ ! -d ~/.irods ]; then mkdir ~/.irods; fi
 echo '{
     "irods_port": 1247,
-    "irods_host": "stars-dw1.edc.renci.org",
+    "irods_host": "stars-fuse.renci.org",
     "irods_user_name": "rods",
     "irods_zone_name": "tempZone"
 }' > ~/.irods/irods_environment.json
@@ -55,8 +55,11 @@ if grep IRODS_MOUNT ~/.bashrc; then
 else
     echo "export IRODS_MOUNT=${IRODS_MOUNT}" >> ~/.bashrc
 fi
+echo "export WES_API_HOST=localhost:8080" >> ~/.bashrc
+echo "export WES_API_PROTO=http" >> ~/.bashrc
 
-# set up python virtualenv
+
+# set up python 3 virtualenv for everything else
 export VENV=~/venv
 python3.6 -m venv $VENV
 cd $VENV
@@ -64,8 +67,13 @@ source bin/activate
 pip install stars
 # install cwltool fork
 git clone https://github.com/stevencox/cwltool.git
-cd cwltool && pip install . && cd $VENV
+cd cwltool && pip install .; cd $VENV
 pip install jupyter
+
+# installing wes-service fork in python3 env
+git clone https://github.com/stevencox/workflow-service.git
+cd workflow-service && pip install .; cd $VENV
+
 
 sudo yum install -y krb5-devel
 pip install sparkmagic

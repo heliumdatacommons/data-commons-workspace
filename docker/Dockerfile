@@ -27,4 +27,4 @@ COPY cat-job.yml /home/dockeruser/venv
 RUN sudo chown -R dockeruser:datacommons /home/dockeruser/venv
 
 ENTRYPOINT ["/bin/bash", "-i", "/home/dockeruser/entrypoint.sh"]
-#CMD ["/home/dockeruser/entrypoint.sh"]
+CMD ["jupyter"]
