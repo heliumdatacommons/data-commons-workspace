@@ -1,0 +1,16 @@
+FROM datacommons-base
+
+COPY sparkmagic.config.json /home/dockeruser/
+COPY dc_jupyter_setup.sh /home/dockeruser
+RUN bash dc_jupyter_setup.sh
+
+COPY cat-workflow.ipynb /home/dockeruser/venv/
+COPY cat.cwl /home/dockeruser/venv/
+COPY cat-job.yml /home/dockeruser/venv/
+RUN sudo chown -R dockeruser:datacommons /home/dockeruser/venv/
+
+COPY ./entrypoint.sh /home/dockeruser
+
+EXPOSE 8888 8080
+ENTRYPOINT ["/bin/bash", "-i", "/home/dockeruser/entrypoint.sh"]
+CMD ["jupyter"]

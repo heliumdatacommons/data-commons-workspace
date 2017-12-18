@@ -2,6 +2,8 @@
 # run as regular user that has sudo access
 # this attempts to be as idempotent as possible
 
+# NOTE: this is deprecated and no longer maintained
+
 user="dockeruser"
 group="datacommons"
 
@@ -12,21 +14,32 @@ sudo yum update -y
 sudo yum install -y epel-release https://centos7.iuscommunity.org/ius-release.rpm
 
 # install misc packages
-sudo yum install -y python36u python36u-devel fuse gcc git vim
+sudo yum install -y python36u python36u-devel fuse gcc git vim nodejs
 
 # install irods-icommands if not already installed
-if ! yum list installed irods-icommands > /dev/null 2>&1; then
-    curl -O ftp://ftp.renci.org/pub/irods/releases/4.1.11/centos7/irods-icommands-4.1.11-centos7-x86_64.rpm
-    sudo yum localinstall -y irods-icommands-4.1.11-centos7-x86_64.rpm
+if ! rpm -qa | grep "irods-icommands" &> /dev/null; then
+    #curl -O ftp://ftp.renci.org/pub/irods/releases/4.1.11/centos7/irods-icommands-4.1.11-centos7-x86_64.rpm
+    #sudo yum localinstall -y irods-icommands-4.1.11-centos7-x86_64.rpm
+
+    # install v4.2.1, which is required by Davrods v4.2.1_1.2.0
+    sudo yum install -y irods-icommands-4.2.1-1.x86_64
+fi
+
+# install davrods if not installed
+if ! rpm -qa | grep davrods &> /dev/null; then
+    curl -O https://github.com/UtrechtUniversity/davrods/releases/download/4.2.1_1.2.0/davrods-4.2.1_1.2.0-1.rpm
+    sudo yum install -y davrods-4.2.1_1.2.0-1.rpm
 fi
 
 if [ ! -d ~/.irods ]; then mkdir ~/.irods; fi
-echo '{
+irods_environment='{
     "irods_port": 1247,
     "irods_host": "stars-fuse.renci.org",
     "irods_user_name": "rods",
     "irods_zone_name": "tempZone"
-}' > ~/.irods/irods_environment.json
+}'
+echo irods_environment > ~/.irods/irods_environment.json
+echo irods_environment | sudo tee /etc/httpd/irods/irods_environment.json
 
 # run iinit in tty mode so we can send password on stdin
 #TODO possibly use ansible variable substitution here
