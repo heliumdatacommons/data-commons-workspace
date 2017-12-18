@@ -30,7 +30,9 @@ To reenable and run the base image with that allows for connecting to the WebDav
 
 ### Jupyter image
 
-   docker run -it --cap-add=SYS_ADMIN --device=/dev/fuse --rm -p 8888:8888 -p 8080:8080 -p 90:80 --name dc_jupyter datacommons-jupyter
+To run the jupyter image:
+
+    docker run -it --cap-add=SYS_ADMIN --device=/dev/fuse --rm -p 8888:8888 -p 8080:8080 -p 90:80 --name dc_jupyter datacommons-jupyter
 
 This will start up a jupyter notebook instance inside the virtual environment, and attach stdout to the current terminal.  It will also start a wes-server instance in the background available on host port 8080, and davrods (webdav) on host port 90.  The jupyter notebook is available on host port 8888.
 
