@@ -25,14 +25,14 @@ This docker image uses the FUSE module to mount irods, which requires CAP_SYS_AD
 
 To reenable and run the base image with that allows for connecting to the WebDav irods interface on host port 90:
 
-    docker run -it --cap-add=SYS_ADMIN --device=/dev/fuse --rm -p 8888:8888 -p 8080:8080 -p 90:80 --name dc_base datacommons-base
+    docker run -it --cap-add=SYS_ADMIN --device=/dev/fuse --rm -p 90:80 --name dc_base datacommons-base
 
 
 ### Jupyter image
 
    docker run -it --cap-add=SYS_ADMIN --device=/dev/fuse --rm -p 8888:8888 -p 8080:8080 -p 90:80 --name dc_jupyter datacommons-jupyter
 
-This will start up a jupyter notebook instance inside the virtual environment, and attach stdout to the current terminal.  It will also start a wes-server instance in the background.  
+This will start up a jupyter notebook instance inside the virtual environment, and attach stdout to the current terminal.  It will also start a wes-server instance in the background available on host port 8080, and davrods (webdav) on host port 90.  The jupyter notebook is available on host port 8888.
 
 If the wes-server is not needed from the host, the '-p 8080:8080' can be ommited.  Note that the wes-client command that is used to send workflows to a wes-server is configured and available in the container.  If host port 8080 is already in use and host access to wes-server is desired, change the first 8080 in the pair to a port not in use.  
 
