@@ -1,2 +1,2 @@
-docker tag datacommons-base theferrit32/datacommons-base:latest
-docker push theferrit32/datacommons-base:latest
+docker tag datacommons-jupyter heliumdatacommons/datacommons-jupyter:latest
+docker push heliumdatacommons/datacommons-jupyter:latest

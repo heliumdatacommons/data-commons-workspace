@@ -1,0 +1,4 @@
+#!/bin/bash -i
+set -a
+cd $TOIL_INSTALL && source venv2.7/bin/activate
+/bin/bash -i
