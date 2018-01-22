@@ -1,6 +1,3 @@
-imagename="datacommons-base"
-if [ ! -z $1 ]; then
-    imagename="$1"
-fi
+imagename="heliumdatacommons/datacommons-base"
 
-docker build -t "$imagename" -f ./datacommons-base/Dockerfile.base "${@:2}" ./datacommons-base
+docker build -t "$imagename" -f ./datacommons-base/Dockerfile.base "$@" ./datacommons-base

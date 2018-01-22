@@ -1,4 +1,12 @@
-#!/bin/bash -i
+#!/bin/bash
 set -a
 cd $TOIL_INSTALL && source venv2.7/bin/activate
-/bin/bash -i
+
+if [ -z "$1" ]; then
+    # interactive
+    /bin/bash -i
+else
+    echo "\nin toilvenv, arguments:"
+    echo "$@"
+    exec "$@"
+fi

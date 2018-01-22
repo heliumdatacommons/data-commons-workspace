@@ -1,10 +1,12 @@
-FROM datacommons-base
+FROM heliumdatacommons/datacommons-base
 
-COPY dc_toil_setup.sh entrypoint.sh /home/dockeruser/
+COPY dc_toil_setup.sh /home/dockeruser/
 COPY ./toilvenv /usr/bin/toilvenv
 RUN sudo chmod +x /usr/bin/toilvenv
 
 RUN bash dc_toil_setup.sh
 
-ENTRYPOINT ["/bin/bash", "-i", "/home/dockeruser/entrypoint.sh"]
+COPY entrypoint.sh /home/dockeruser
+
+ENTRYPOINT ["/bin/bash", "/home/dockeruser/entrypoint.sh"]
 CMD ["toilvenv"]

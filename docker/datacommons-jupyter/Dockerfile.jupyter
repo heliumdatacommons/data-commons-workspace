@@ -1,4 +1,4 @@
-FROM datacommons-base
+FROM heliumdatacommons/datacommons-base
 
 COPY sparkmagic.config.json dc_jupyter_setup.sh entrypoint.sh /home/dockeruser/
 RUN bash dc_jupyter_setup.sh

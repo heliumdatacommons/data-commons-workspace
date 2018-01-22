@@ -1,6 +1,3 @@
-imagename="datacommons-jupyter"
-if [ ! -z $1 ]; then
-    imagename="$1"
-fi
+imagename="heliumdatacommons/datacommons-jupyter"
 
-docker build -t "$imagename" -f ./datacommons-jupyter/Dockerfile.jupyter "${@:2}" ./datacommons-jupyter
+docker build -t "$imagename" -f ./datacommons-jupyter/Dockerfile.jupyter "$@" ./datacommons-jupyter
