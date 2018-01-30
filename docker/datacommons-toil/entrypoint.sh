@@ -1,6 +1,6 @@
 #!/bin/bash
 cd ~/
-. ~/.bashrc
+. ~/.profile
 echo "in entrypont.sh"
 
 if [ ! -f ~/.irods/.irodsA ]; then
@@ -24,8 +24,11 @@ fi
 # start apache for webdav (port 80)
 sudo /usr/sbin/httpd &
 
+
 sudo mkdir -p /var/log/datacommons
 sudo chown -R dockeruser:datacommons /var/log/datacommons
+toillog=/var/log/datacommons/toillog
+touch ${toillog}
 
 # allow specification of a few specific run commands. For others, pass off to exec
 # when a process is backgrounded, write to its log file

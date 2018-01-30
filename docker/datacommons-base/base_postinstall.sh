@@ -16,6 +16,10 @@ echo $irods_environment | sudo tee /etc/httpd/irods/irods_environment.json
 # set global httpd ServerName to localhost
 sudo sed -i 's|.*ServerName.*|ServerName localhost|g' /etc/httpd/conf/httpd.conf
 
+# TODO add httpd Alias for datacommons log
+# https://httpd.apache.org/docs/2.4/urlmapping.html
+
+
 # run iinit in tty mode so we can send password on stdin
 #TODO possibly use ansible variable substitution here
 if [ -z "$IRODS_PASSWORD" ]; then
@@ -38,10 +42,10 @@ fi
 sudo sed -i 's/^#.*user_allow_other/user_allow_other/g' /etc/fuse.conf
 
 # if bashrc has IRODS_MOUNT set, reset it to current one, else add it
-if grep IRODS_MOUNT ~/.bashrc; then
-    sed -i "s|^export IRODS_MOUNT=.*$|export IRODS_MOUNT=${IRODS_MOUNT}|g" ~/.bashrc
+if grep IRODS_MOUNT ~/.profile; then
+    sed -i "s|^export IRODS_MOUNT=.*$|export IRODS_MOUNT=${IRODS_MOUNT}|g" ~/.profile
 else
-    echo "export IRODS_MOUNT=${IRODS_MOUNT}" >> ~/.bashrc
+    echo "export IRODS_MOUNT=${IRODS_MOUNT}" >> ~/.profile
 fi
 
 # set up python 3 virtualenv for everything else

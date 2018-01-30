@@ -63,13 +63,13 @@ fi
 sudo sed -i 's/^#.*user_allow_other/user_allow_other/g' /etc/fuse.conf
 
 # if bashrc has IRODS_MOUNT set, reset it to current one, else add it
-if grep IRODS_MOUNT ~/.bashrc; then
-    sed -i "s|^export IRODS_MOUNT=.*$|export IRODS_MOUNT=${IRODS_MOUNT}|g" ~/.bashrc
+if grep IRODS_MOUNT ~/.profile; then
+    sed -i "s|^export IRODS_MOUNT=.*$|export IRODS_MOUNT=${IRODS_MOUNT}|g" ~/.profile
 else
-    echo "export IRODS_MOUNT=${IRODS_MOUNT}" >> ~/.bashrc
+    echo "export IRODS_MOUNT=${IRODS_MOUNT}" >> ~/.profile
 fi
-echo "export WES_API_HOST=localhost:8080" >> ~/.bashrc
-echo "export WES_API_PROTO=http" >> ~/.bashrc
+echo "export WES_API_HOST=localhost:8080" >> ~/.profile
+echo "export WES_API_PROTO=http" >> ~/.profile
 
 
 # set up python 3 virtualenv for everything else

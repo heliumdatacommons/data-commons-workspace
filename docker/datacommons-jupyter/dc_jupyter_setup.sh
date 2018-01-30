@@ -1,5 +1,5 @@
-echo "export WES_API_HOST=localhost:8080" >> ~/.bashrc
-echo "export WES_API_PROTO=http" >> ~/.bashrc
+echo "export WES_API_HOST=localhost:8080" >> ~/.profile
+echo "export WES_API_PROTO=http" >> ~/.profile
 
 export VENV=~/venv
 cd $VENV

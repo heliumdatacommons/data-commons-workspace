@@ -54,10 +54,10 @@ fi
 
 
 # if bashrc has IRODS_MOUNT set, reset it to current one, else add it
-if grep IRODS_MOUNT ~/.bashrc; then
-    sed -i "s|^export IRODS_MOUNT=.*$|export IRODS_MOUNT=${IRODS_MOUNT}|g" ~/.bashrc
+if grep IRODS_MOUNT ~/.profile; then
+    sed -i "s|^export IRODS_MOUNT=.*$|export IRODS_MOUNT=${IRODS_MOUNT}|g" ~/.profile
 else
-    echo "export IRODS_MOUNT=${IRODS_MOUNT}" >> ~/.bashrc
+    echo "export IRODS_MOUNT=${IRODS_MOUNT}" >> ~/.profile
 fi
 
 # set up python virtualenv
