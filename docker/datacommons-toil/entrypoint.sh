@@ -1,7 +1,11 @@
 #!/bin/bash
+
+# fixes issue in docker for mac where fuse permissions are restricted to root:root
+# https://github.com/theferrit32/data-commons-workspace/issues/5
+if [ -f /dev/fuse ]; then sudo chmod 666 /dev/fuse; fi
+
 cd ~/
 . ~/.profile
-echo "in entrypont.sh"
 
 if [ ! -f ~/.irods/.irodsA ]; then
     # irods not initialized

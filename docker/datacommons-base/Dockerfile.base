@@ -20,11 +20,13 @@ RUN chmod +x /usr/bin/venv
 RUN groupadd datacommons \
     && useradd -m dockeruser -g datacommons -s /bin/bash \
     && echo "dockeruser ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/datacommons
+
 USER dockeruser
 WORKDIR /home/dockeruser
 
 COPY ./base_postinstall.sh ./entrypoint.sh  /home/dockeruser/
-RUN bash base_postinstall.sh
+RUN touch /home/dockeruser/.profile \
+    && bash base_postinstall.sh
 
 EXPOSE 80
 
