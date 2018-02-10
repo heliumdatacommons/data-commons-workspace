@@ -1,0 +1,47 @@
+#!/bin/bash
+
+set -e
+#set -x
+
+CHRONOS=https://stars-app.renci.org/chronos/
+CHRONOS_PROTO=https
+#CHRONOS=stars-dw2.edc.renci.org:4400
+#CHRONOS_PROTO=http
+
+build () {
+    cd docker
+    bash build-base.sh
+    bash build-jupyter.sh
+    cd ..
+}
+run () {
+    base () {
+        docker run -it --privileged --rm --name dc_jupyter   \
+               -e DATACOMMONS_CHRONOS_ENDPOINT=${CHRONOS}    \
+               -e DATACOMMONS_CHRONOS_PROTO=${CHRONOS_PROTO} \
+               -p 8888:8888 -p 90:80                         \
+               heliumdatacommons/datacommons-base            \
+               venv
+    }
+    jupyter () {
+        local tag=
+        for arg in $*; do
+	    case $arg in
+	        --latest*) tag=:latest; echo $tag;;
+	        *) echo "unknown command"; return 1;;
+	    esac
+        done
+        docker run -it --privileged --rm --name dc_jupyter   \
+               -e DATACOMMONS_CHRONOS_ENDPOINT=${CHRONOS}    \
+               -e DATACOMMONS_CHRONOS_PROTO=${CHRONOS_PROTO} \
+               -p 8888:8888 -p 90:80                         \
+               --volume ~/dev:/home/dockeruser/hdev            \
+               heliumdatacommons/datacommons-jupyter$tag         \
+               venv
+    }
+    $*
+}
+
+#               heliumdatacommons/datacommons-jupyter         \
+
+$*

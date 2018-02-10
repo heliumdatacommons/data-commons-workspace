@@ -24,6 +24,8 @@ RUN groupadd datacommons \
 USER dockeruser
 WORKDIR /home/dockeruser
 
+RUN sudo yum install -y emacs-nox
+
 COPY ./base_postinstall.sh ./entrypoint.sh  /home/dockeruser/
 RUN touch /home/dockeruser/.profile \
     && bash base_postinstall.sh
