@@ -1,3 +1,4 @@
+#!/bin/bash
 user="dockeruser"
 group="datacommons"
 

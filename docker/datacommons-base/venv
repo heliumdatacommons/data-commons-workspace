@@ -1,4 +1,11 @@
-#!/bin/bash -i
+#!/bin/bash
 set -a
+
 cd ~/venv && source bin/activate
-/bin/bash
+
+if [ -z "$1" ]; then
+    # interactive
+    /bin/bash -i
+else
+    /bin/bash -c "$@"
+fi

@@ -6,7 +6,6 @@ if [ -z "$1" ]; then
     # interactive
     /bin/bash -i
 else
-    echo "\nin toilvenv, arguments:"
-    echo "$@"
-    exec "$@"
+    # execute parameters in bash
+    /bin/bash -c "$@"
 fi

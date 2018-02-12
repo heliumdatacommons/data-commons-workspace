@@ -2,19 +2,27 @@
 
 # fixes issue in docker for mac where fuse permissions are restricted to root:root
 # https://github.com/theferrit32/data-commons-workspace/issues/5
-if [ -f /dev/fuse ]; then sudo chmod 666 /dev/fuse; fi
+if [ -c /dev/fuse ]; then sudo chmod 666 /dev/fuse; fi
 
 cd ~/
 . ~/.profile
 #source ~/.bashrc
 
-
 if [ ! -f ~/.irods/.irodsA ]; then
     # irods not initialized
-    iinit
+    echo "iRODS not initialized"
+
+    if [ ! -z "$IRODS_PASSWORD" ]; then
+        echo "Authenticating to iRODS using provided password"
+        echo "$IRODS_PASSWORD" | iinit -e
+    else
+        echo "Authenticating to iRODS using standard input"
+        iinit
+    fi
 fi
 
 if ! mount | grep "irodsFs.*/irods"; then
+    echo "Mounting iRODS"
     irodsFs -onocache -o allow_other /renci/irods
 fi
 
@@ -43,7 +51,8 @@ elif [ "$1" == "wes-server" ]; then
 elif [ "$1" == "venv" ]; then
     jupyter notebook --ip=0.0.0.0 --no-browser --NotebookApp.token='' >> ${jupyterlog} 2>&1 &
     wes-server --backend=wes_service.cwl_runner --opt runner=cwltool --opt extra=--data-commons >> ${weslog} 2>&1 &
-    deactivate && venv
+    #deactivate && venv
+    bash -i
 fi
 
 # drop back to venv shell when other commands are terminated or backgrounded
