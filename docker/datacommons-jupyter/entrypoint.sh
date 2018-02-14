@@ -14,7 +14,7 @@ if [ ! -f ~/.irods/.irodsA ]; then
 
     if [ ! -z "$IRODS_PASSWORD" ]; then
         echo "Authenticating to iRODS using provided password"
-        echo "$IRODS_PASSWORD" | iinit -e
+        iinit "$IRODS_PASSWORD"
     else
         echo "Authenticating to iRODS using standard input"
         iinit

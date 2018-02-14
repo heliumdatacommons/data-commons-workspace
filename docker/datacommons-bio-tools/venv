@@ -1,0 +1,11 @@
+#!/bin/bash
+set -a
+
+cd ~/venv && source bin/activate
+
+if [ -z "$1" ]; then
+    # interactive
+    /bin/bash -i
+else
+    /bin/bash -c "$@"
+fi
