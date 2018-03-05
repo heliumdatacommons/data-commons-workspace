@@ -5,14 +5,14 @@ group="datacommons"
 set -e
 
 if [ ! -d ~/.irods ]; then mkdir ~/.irods; fi
-irods_environment='{
-    "irods_port": 1247,
-    "irods_host": "stars-fuse.renci.org",
-    "irods_user_name": "rods",
-    "irods_zone_name": "tempZone"
-}'
-echo $irods_environment > ~/.irods/irods_environment.json
-echo $irods_environment | sudo tee /etc/httpd/irods/irods_environment.json
+# irods_environment='{
+#     "irods_port": 1247,
+#     "irods_host": "stars-fuse.renci.org",
+#     "irods_user_name": "rods",
+#     "irods_zone_name": "tempZone"
+# }'
+# echo $irods_environment > ~/.irods/irods_environment.json
+# echo $irods_environment | sudo tee /etc/httpd/irods/irods_environment.json
 
 # set global httpd ServerName to localhost
 sudo sed -i 's|.*ServerName.*|ServerName localhost|g' /etc/httpd/conf/httpd.conf
