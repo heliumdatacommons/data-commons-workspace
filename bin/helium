@@ -11,29 +11,75 @@ IRODS_PORT=1247
 IRODS_HOST="data.commonsshare.org"
 IRODS_HOME="/commonsshareZone/home"
 IRODS_CWD="/commonsshareZone/home"
-IRODS_USER_NAME="rods"
+# IRODS_USER_NAME="rods"
 IRODS_ZONE_NAME="commonsshareZone"
 
+usage() {
+    echo "Usage: $0 {build|run} [option...]"
+    echo
+    echo "  build {base|jupyter|all}"
+    echo "    Run command to build specified or all Docker images."
+    echo
+    echo "  run {base|jupyter}"
+    echo "    Specify image to run."
+    echo "    base: "
+    echo "       -U|--username    Required. Username to connect to iRODS."
+    echo "       -P|--password    Optional. Password to connect to iRODS."
+    echo
+}
 build () {
     cd docker
-    bash build-base.sh
-    bash build-jupyter.sh
+    base () {
+        bash build-base.sh
+    }
+    jupyter () {
+        bash build-jupyter.sh
+    }
+    all () {
+        base
+        jupyter
+    }
+    $*
     cd ..
 }
 run () {
     base () {
-        docker run -it --privileged --rm --name dc_base   \
-               -e DATACOMMONS_CHRONOS_ENDPOINT=${CHRONOS}    \
-               -e DATACOMMONS_CHRONOS_PROTO=${CHRONOS_PROTO} \
-               -e IRODS_PORT=${IRODS_PORT}                   \
-               -e IRODS_HOST=${IRODS_HOST}                   \
-               -e IRODS_HOME=${IRODS_HOME}                   \
-               -e IRODS_CWD=${IRODS_CWD}                     \
-               -e IRODS_USER_NAME=${IRODS_USER_NAME}         \
-               -e IRODS_ZONE_NAME=${IRODS_ZONE_NAME}         \
-               -p 8888:8888 -p 90:80                         \
-               heliumdatacommons/datacommons-base            \
-               venv
+        local IRODS_USER_NAME=
+        local IRODS_PASSWORD=
+
+        while [ "$1" != "" ]; do
+            case $1 in
+                -U | --user )           shift
+                                        IRODS_USER_NAME=$1
+                                        ;;
+                -P | --password )       shift
+                                        IRODS_PASSWORD=$1
+                                        ;;
+                * )                     echo "Command not found"
+                                        exit 1
+            esac
+            shift
+        done
+
+        if [ ! -z "$IRODS_USER_NAME" ]
+        then
+            docker run -it --privileged --rm --name dc_base   \
+                -e DATACOMMONS_CHRONOS_ENDPOINT=${CHRONOS}    \
+                -e DATACOMMONS_CHRONOS_PROTO=${CHRONOS_PROTO} \
+                -e IRODS_PORT=${IRODS_PORT}                   \
+                -e IRODS_HOST=${IRODS_HOST}                   \
+                -e IRODS_HOME=${IRODS_HOME}                   \
+                -e IRODS_CWD=${IRODS_CWD}                     \
+                -e IRODS_USER_NAME=${IRODS_USER_NAME}         \
+                -e IRODS_PASSWORD=${IRODS_PASSWORD}           \
+                -e IRODS_ZONE_NAME=${IRODS_ZONE_NAME}         \
+                -p 8888:8888 -p 90:80                         \
+                heliumdatacommons/datacommons-base            \
+                venv
+        else
+            echo "ERROR: iRODS Username not provided."
+            exit 1;
+        fi
     }
     jupyter () {
         local tag=
@@ -56,4 +102,9 @@ run () {
 
 #               heliumdatacommons/datacommons-jupyter         \
 
+
+if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
+    usage
+    exit 0
+fi
 $*
