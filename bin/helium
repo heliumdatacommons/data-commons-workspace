@@ -3,7 +3,7 @@
 set -e
 #set -x
 
-CHRONOS=https://stars-app.renci.org/chronos/
+CHRONOS=stars-app.renci.org/chronos/
 CHRONOS_PROTO=https
 #CHRONOS=stars-dw2.edc.renci.org:4400
 #CHRONOS_PROTO=http
