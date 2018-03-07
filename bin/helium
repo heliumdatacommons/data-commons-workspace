@@ -9,8 +9,8 @@ CHRONOS_PROTO=https
 #CHRONOS_PROTO=http
 IRODS_PORT=1247
 IRODS_HOST="data.commonsshare.org"
-IRODS_HOME="/commonsshareZone/home/rods"
-IRODS_CWD="/commonsshareZone/home/rods"
+IRODS_HOME="/commonsshareZone/home"
+IRODS_CWD="/commonsshareZone/home"
 IRODS_USER_NAME="rods"
 IRODS_ZONE_NAME="commonsshareZone"
 
