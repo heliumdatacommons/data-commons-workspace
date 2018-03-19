@@ -27,10 +27,11 @@ RUN groupadd datacommons \
 USER dockeruser
 WORKDIR /home/dockeruser
 
-COPY ./base_postinstall.sh ./entrypoint.sh ./dc_toil_setup.sh  /home/dockeruser/
+COPY ./base_postinstall.sh ./entrypoint.sh ./dc_toil_setup.sh ./base-start.sh /home/dockeruser/
 RUN sudo chmod +x /home/dockeruser/base_postinstall.sh \
     && sudo chmod +x /home/dockeruser/entrypoint.sh \
     && sudo chmod +x /home/dockeruser/dc_toil_setup.sh \
+    && sudo chmod +x /home/dockeruser/base-start.sh \
     && touch /home/dockeruser/.profile \
     && bash dc_toil_setup.sh \
     && bash base_postinstall.sh
@@ -38,5 +39,5 @@ RUN sudo chmod +x /home/dockeruser/base_postinstall.sh \
 EXPOSE 80
 
 COPY ./davrods-vhost.conf /etc/httpd/conf.d/
-ENTRYPOINT ["bash", "-i", "/home/dockeruser/entrypoint.sh"]
+ENTRYPOINT ["bash", "-i", "/home/dockeruser/base-start.sh"]
 CMD ["venv"]
