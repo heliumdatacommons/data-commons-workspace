@@ -46,16 +46,21 @@ run () {
     base () {
         local IRODS_USER_NAME=
         local IRODS_PASSWORD=
+        local VENV=
 
         while [ "$1" != "" ]; do
             case $1 in
+                -cwl )                   VENV="venv"
+                                        ;;
+                -toil )                  VENV="toilvenv"
+                                        ;;
                 -U | --user )           shift
                                         IRODS_USER_NAME=$1
                                         ;;
                 -P | --password )       shift
                                         IRODS_PASSWORD=$1
                                         ;;
-                * )                     echo "Command not found"
+                * )                     echo "ERROR: Input not found."
                                         exit 1
             esac
             shift
@@ -75,7 +80,7 @@ run () {
                 -e IRODS_ZONE_NAME=${IRODS_ZONE_NAME}         \
                 -p 8888:8888 -p 90:80                         \
                 heliumdatacommons/datacommons-base            \
-                venv
+                ${VENV}
         else
             echo "ERROR: iRODS Username not provided."
             exit 1;
