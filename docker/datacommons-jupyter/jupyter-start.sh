@@ -1,33 +1,9 @@
 #!/bin/bash
 
-# fixes issue in docker for mac where fuse permissions are restricted to root:root
-# https://github.com/theferrit32/data-commons-workspace/issues/5
-if [ -c /dev/fuse ]; then sudo chmod 666 /dev/fuse; fi
-
 cd ~/
 . ~/.profile
-#source ~/.bashrc
 
-if [ ! -f ~/.irods/.irodsA ]; then
-    # irods not initialized
-    echo "iRODS not initialized"
-
-    if [ ! -z "$IRODS_PASSWORD" ]; then
-        echo "Authenticating to iRODS using provided password"
-        iinit "$IRODS_PASSWORD"
-    else
-        echo "Authenticating to iRODS using standard input"
-        iinit
-    fi
-fi
-
-if ! mount | grep "irodsFs.*/irods"; then
-    echo "Mounting iRODS"
-    irodsFs -onocache -o allow_other /renci/irods
-fi
-
-# start apache for webdav (port 80)
-sudo /usr/sbin/httpd &
+bash /home/dockeruser/entrypoint.sh
 
 cd ~/venv
 source bin/activate
