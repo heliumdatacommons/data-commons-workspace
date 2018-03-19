@@ -17,6 +17,9 @@ RUN rpm --import https://packages.irods.org/irods-signing-key.asc \
 COPY ./venv /usr/bin/venv
 RUN chmod +x /usr/bin/venv
 
+COPY ./toilvenv /usr/bin/toilvenv
+RUN chmod +x /usr/bin/toilvenv
+
 RUN groupadd datacommons \
     && useradd -m dockeruser -g datacommons -s /bin/bash \
     && echo "dockeruser ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/datacommons
@@ -24,16 +27,17 @@ RUN groupadd datacommons \
 USER dockeruser
 WORKDIR /home/dockeruser
 
-RUN sudo yum install -y emacs-nox
-
-COPY ./base_postinstall.sh ./entrypoint.sh  /home/dockeruser/
+COPY ./base_postinstall.sh ./entrypoint.sh ./dc_toil_setup.sh ./base-start.sh /home/dockeruser/
 RUN sudo chmod +x /home/dockeruser/base_postinstall.sh \
     && sudo chmod +x /home/dockeruser/entrypoint.sh \
+    && sudo chmod +x /home/dockeruser/dc_toil_setup.sh \
+    && sudo chmod +x /home/dockeruser/base-start.sh \
     && touch /home/dockeruser/.profile \
+    && bash dc_toil_setup.sh \
     && bash base_postinstall.sh
 
 EXPOSE 80
 
 COPY ./davrods-vhost.conf /etc/httpd/conf.d/
-ENTRYPOINT ["bash", "-i", "/home/dockeruser/entrypoint.sh"]
+ENTRYPOINT ["bash", "-i", "/home/dockeruser/base-start.sh"]
 CMD ["venv"]

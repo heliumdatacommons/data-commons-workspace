@@ -75,15 +75,5 @@ if ! mount | grep "irodsFs.*/irods"; then
     irodsFs -onocache -o allow_other /renci/irods
 fi
 
-# for Davrods
+# start apache for webdav (port 80)
 sudo /usr/sbin/httpd &
-
-if [ "$1" == "venv" ] || [ -z "$1" ]; then
-    # interactive
-    cd ~/venv && source bin/activate
-    bash -i
-else
-    # run commands in virtualenvironment
-    cd ~/venv && source bin/activate
-    bash -c "$@"
-fi
