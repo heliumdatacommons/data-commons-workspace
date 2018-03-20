@@ -24,4 +24,8 @@ elif [ "$1" == "_cwl_worker" ]; then
     # run commands in virtualenvironment
     cd ~/venv && source bin/activate
     bash -c "$@"
+elif [ "$1" == "_toil_exec" ]; then
+    toilvenv "${@:2}"
+elif [ "$1" == "_cwl_exec" ]; then
+    venv "${@:2}"
 fi
