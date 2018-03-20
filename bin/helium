@@ -3,8 +3,7 @@
 set -e
 #set -x
 
-CHRONOS=stars-app.renci.org/chronos/
-CHRONOS_PROTO=https
+CHRONOS=https://stars-app.renci.org/chronos/
 #CHRONOS=stars-dw2.edc.renci.org:4400
 #CHRONOS_PROTO=http
 IRODS_PORT=1247
@@ -78,8 +77,7 @@ run () {
         if [ ! -z "$IRODS_USER_NAME" ]
         then
             docker run -it --privileged --rm --name dc_base   \
-                -e DATACOMMONS_CHRONOS_ENDPOINT=${CHRONOS}    \
-                -e DATACOMMONS_CHRONOS_PROTO=${CHRONOS_PROTO} \
+                -e CHRONOS_URL=${CHRONOS}    \
                 -e IRODS_PORT=${IRODS_PORT}                   \
                 -e IRODS_HOST=${IRODS_HOST}                   \
                 -e IRODS_HOME=${IRODS_HOME}                   \
@@ -124,8 +122,7 @@ run () {
         if [ ! -z "$IRODS_USER_NAME" ]
         then
             docker run -it --privileged --rm --name dc_jupyter  \
-                -e DATACOMMONS_CHRONOS_ENDPOINT=${CHRONOS}      \
-                -e DATACOMMONS_CHRONOS_PROTO=${CHRONOS_PROTO}   \
+                -e CHRONOS_URL=${CHRONOS}      \
                 -e IRODS_PORT=${IRODS_PORT}                     \
                 -e IRODS_HOST=${IRODS_HOST}                     \
                 -e IRODS_HOME=${IRODS_HOME}                     \
