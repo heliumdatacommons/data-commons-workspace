@@ -54,6 +54,7 @@ then
         do
             search=$i
             replace=${irods_config[$i]}
+            if [[ $replace == /* ]]; then replace='\'$replace; fi
             # Note the "" after -i, needed in OS X
             sudo sed -i "s/${search}/${replace}/g" /etc/httpd/conf.d/davrods-vhost.conf
         done
