@@ -27,6 +27,14 @@ then
     echo $irods_environment | sudo tee /etc/httpd/irods/irods_environment.json
 fi
 
+# Decide on DAVRODS_ROOT value
+if [ ! -z "$IRODS_CWD" ]
+then
+    DAVRODS_ROOT=$IRODS_CWD
+else
+    DAVRODS_ROOT='Zone'
+fi
+
 # Replace values in Davrods config file
 if [ ! -z "$IRODS_PORT" ] && \
     [ ! -z "$IRODS_HOST" ] && \
@@ -37,6 +45,7 @@ then
         [%%IRODS_PORT%%]=${IRODS_PORT}
         [%%IRODS_HOST%%]=${IRODS_HOST}
         [%%IRODS_ZONE_NAME%%]=${IRODS_ZONE_NAME}
+        [%%DAVRODS_ROOT%%]=${DAVRODS_ROOT}
     )
 
     configurer() {
