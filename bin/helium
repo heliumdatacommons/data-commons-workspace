@@ -4,14 +4,12 @@ set -e
 #set -x
 
 CHRONOS=https://stars-app.renci.org/chronos/
-#CHRONOS=stars-dw2.edc.renci.org:4400
-#CHRONOS_PROTO=http
 IRODS_PORT=1247
-IRODS_HOST="data.commonsshare.org"
-IRODS_HOME="/commonsshareZone/home"
-IRODS_CWD="/commonsshareZone/home"
+IRODS_ZONE_NAME="commonssharetestZone"
+IRODS_HOST="test.commonsshare.org"
+IRODS_HOME="/$IRODS_ZONE_NAME"
+IRODS_CWD="/$IRODS_ZONE_NAME"
 # IRODS_USER_NAME="rods"
-IRODS_ZONE_NAME="commonsshareZone"
 
 usage() {
     echo "Usage: $0 {build|run} [options...]"
