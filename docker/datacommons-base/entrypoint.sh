@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# fixes issue in docker for mac where fuse permissions are restricted to root:root
-# https://github.com/theferrit32/data-commons-workspace/issues/5
-if [ -c /dev/fuse ]; then sudo chmod 666 /dev/fuse; fi
-
-
 cd ~/
 . ~/.profile
 
@@ -63,17 +58,29 @@ if [ ! -f ~/.irods/.irodsA ]; then
 
     if [ ! -z "$IRODS_PASSWORD" ]; then
         echo "Authenticating to iRODS using provided password"
-        echo "$IRODS_PASSWORD" | iinit -e
+        iinit "$IRODS_PASSWORD"
     else
         echo "Authenticating to iRODS using standard input"
         iinit
     fi
 fi
 
-if ! mount | grep "irodsFs.*/irods"; then
-    echo "Mounting iRODS"
-    irodsFs -onocache -o allow_other /renci/irods
-fi
-
 # start apache for webdav (port 80)
 sudo /usr/sbin/httpd &
+
+# avoid davfs2 retries and possible failure by waiting for httpd to start first
+wait_limit=30 # max seconds to wait
+x=0
+echo -n "waiting for httpd to start"
+while ! curl localhost:80 >/dev/null 2>&1 && [ $x -lt $wait_limit ]; do
+    x=$((x+1))
+    echo -n "."
+    sleep 1
+done; echo
+if [ $x -eq $wait_limit ]; then
+    echo "httpd did not start in under $wait_limit seconds"
+fi
+
+# mount the webdav port to the filesystem
+echo "http://localhost:80 ${IRODS_USER_NAME} ${IRODS_PASSWORD}" | sudo tee -a /etc/davfs2/secrets >> /dev/null
+sudo mount -t davfs -o uid=dockeruser,gid=datacommons "http://localhost:80" ${IRODS_MOUNT}

@@ -6,7 +6,7 @@ RUN rpm --import https://packages.irods.org/irods-signing-key.asc \
     && yum install -y epel-release https://centos7.iuscommunity.org/ius-release.rpm \
     && yum update -y \
     && yum install -y \
-        sudo python36u python36u-devel fuse gcc git nodejs \
+        sudo python36u python36u-devel davfs2 gcc git nodejs \
     && yum install -y \
         ftp://ftp.renci.org/pub/irods/releases/4.1.11/centos7/irods-runtime-4.1.11-centos7-x86_64.rpm \
         ftp://ftp.renci.org/pub/irods/releases/4.1.11/centos7/irods-icommands-4.1.11-centos7-x86_64.rpm \
