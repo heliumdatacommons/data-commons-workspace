@@ -10,7 +10,7 @@ if [ ! -z "$IRODS_PORT" ] && \
     [ ! -z "$IRODS_ZONE_NAME" ]
 then
     irods_environment='{
-        "irods_port": "'${IRODS_PORT}'",
+        "irods_port": '${IRODS_PORT}',
         "irods_host": "'${IRODS_HOST}'",
         "irods_user_name": "'${IRODS_USER_NAME}'",
         "irods_zone_name": "'${IRODS_ZONE_NAME}'"'
