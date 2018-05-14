@@ -21,6 +21,10 @@ then
     if [ ! -z "$IRODS_CWD" ]; then
         irods_environment=${irods_environment}', "irods_cwd": "'${IRODS_CWD}'"'
     fi
+    if [ ! -z "$IRODS_OIDC" ]; then
+        irods_environment=${irods_environment}', "irods_authentication_scheme": "openid"'
+        irods_environment=${irods_environment}', "openid_provider": "'${IRODS_OIDC}'"'
+    fi
 
     irods_environment=${irods_environment}' }'
     echo $irods_environment > ~/.irods/irods_environment.json
