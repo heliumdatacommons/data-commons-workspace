@@ -28,12 +28,13 @@ then
 fi
 
 # Decide on DAVRODS_ROOT value
-# if [ ! -z "$IRODS_CWD" ]
-# then
-#     DAVRODS_ROOT=$IRODS_CWD
-# else
-#     DAVRODS_ROOT='Zone'
-# fi
+if [ ! -z "$IRODS_CWD" ]
+then
+    DAVRODS_ROOT=$IRODS_CWD
+else
+    DAVRODS_ROOT='Zone'
+fi
+echo "DAVRODS_ROOT variable is: ${DAVRODS_ROOT}"
 
 # Replace values in Davrods config file
 if [ ! -z "$IRODS_PORT" ] && \
@@ -45,8 +46,7 @@ then
         [%%IRODS_PORT%%]=${IRODS_PORT}
         [%%IRODS_HOST%%]=${IRODS_HOST}
         [%%IRODS_ZONE_NAME%%]=${IRODS_ZONE_NAME}
-        # [%%DAVRODS_ROOT%%]=${DAVRODS_ROOT}
-        [%%DAVRODS_ROOT%%]='Zone'
+        [%%DAVRODS_ROOT%%]=${DAVRODS_ROOT}
     )
 
     configurer() {
@@ -55,12 +55,13 @@ then
         do
             search=$i
             replace=${irods_config[$i]}
-            if [[ $replace == /* ]]; then replace='\'$replace; fi
+            #if [[ $replace == /* ]]; then replace='\'$replace; fi
             # Note the "" after -i, needed in OS X
-            sudo sed -i "s/${search}/${replace}/g" /etc/httpd/conf.d/davrods-vhost.conf
+            sudo sed -i "s|${search}|${replace}|g" /etc/httpd/conf.d/davrods-vhost.conf
         done
     }
     configurer
+    #sudo cat /etc/httpd/conf.d/davrods-vhost.conf
 fi
 
 if [ ! -f ~/.irods/.irodsA ]; then
@@ -94,4 +95,12 @@ fi
 
 # mount the webdav port to the filesystem
 echo "http://localhost:80 ${IRODS_USER_NAME} ${IRODS_PASSWORD}" | sudo tee -a /etc/davfs2/secrets >> /dev/null
+#sudo mkdir /renci/irods/webdav
 sudo mount -t davfs -o uid=dockeruser,gid=datacommons "http://localhost:80" ${IRODS_MOUNT}
+
+
+# allow fuse cross-user access so docker as root can see irods
+sudo sed -i 's/^#.*user_allow_other/user_allow_other/g' /etc/fuse.conf
+# mount irods fuse
+#sudo chmod -R dockeruser:datacommons /renci/irods
+#irodsFs -onocache -oallow_other /renci/irods

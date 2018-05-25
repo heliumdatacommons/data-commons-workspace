@@ -20,7 +20,7 @@ sudo sed -i 's|^# dav_group.*|dav_group davfs2|g' /etc/davfs2/davfs2.conf
 if [ -z "$IRODS_PASSWORD" ]; then
     echo "Docker image will not contain an auto-mounted irods filesystem"
     echo "When it is first run in a new container, it will perform authentication"
-    echo "To authenticate at build time, pass '--build-arg IRODS_PASSWORD=\"<your_password>\"' to docker build"
+    echo "To authenticate at build time, pass '--build-arg IRODS_PASSWORD=<your_password>' to docker build"
 else
     iinit "$IRODS_PASSWORD"
     echo

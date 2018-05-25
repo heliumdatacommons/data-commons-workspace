@@ -21,6 +21,9 @@ RUN rpm --import https://packages.irods.org/irods-signing-key.asc \
 # build patched irods
 RUN yum install -y git sudo which make pam-devel unixODBC unixODBC-devel
 
+# TODO REMOVE
+RUN yum install -y vim
+
 # irods build dependencies
 ENV IRODS_EXTERNALS="/opt/irods-externals"
 RUN git clone https://github.com/irods/externals ${IRODS_EXTERNALS}-src \
@@ -30,6 +33,7 @@ RUN git clone https://github.com/irods/externals ${IRODS_EXTERNALS}-src \
     && curl -s https://packages.irods.org/renci-irods.yum.repo | sudo tee /etc/yum.repos.d/renci-irods.yum.repo \
     && yum install -y \
         irods-externals-zeromq4-14.1.3-0 \
+        irods-externals-libarchive3.1.2-0 \
         irods-externals-libarchive3.3.2-0 \
         irods-externals-jansson2.7-0 \
         irods-externals-cppzmq4.1-0 \
@@ -48,24 +52,26 @@ ENV IRODS="/opt/irods"
 RUN git clone https://github.com/theferrit32/irods ${IRODS} \
     && cd ${IRODS} \
     && git submodule update --init \
-    && git checkout 4-2-stable \
+    && git checkout 4-2-3-dev \
+#    && sed -i 's|IRODS_VERSION_MINOR "3"|IRODS_VERSION_MINOR "2"|g' CMakeLists.txt \
+#    && sed -i 's|IRODS_VERSION_PATCH "0"|IRODS_VERSION_PATCH "2"|g' CMakeLists.txt \
     && mkdir build \
     && cd build \
     && cmake -DIRODS_EXTERNALS_PACKAGE_ROOT=${IRODS_EXTERNALS} .. \
-    && make -j$(nproc) package \
-    # install irods development and library package (dependency of irods-icommands package)
+    && make -j$(($(nproc)-1)) package \
     && yum install -y irods-devel-4.2.3* irods-runtime-4.2.3*
 
 # build irods icommands
+#RUN yum install -y irods-icommands
 ENV IRODS_CLIENT_ICOMMANDS="/opt/irods_client_icommands"
 RUN git clone https://github.com/irods/irods_client_icommands ${IRODS_CLIENT_ICOMMANDS} \
     && cd ${IRODS_CLIENT_ICOMMANDS} \
     && git checkout 4-2-stable \
-    #sed -i 's|IRODS 4.2.3 EXACT|IRODS 4.2.2 EXACT|g' CMakeLists.txt
+    && sed -i 's|IRODS 4.2.2 EXACT|IRODS 4.2.3 EXACT|g' CMakeLists.txt \
     && mkdir build \
     && cd build \
     && cmake .. \
-    && make -j$(nproc) package \
+    && make -j$(($(nproc)-1)) package \
     && yum install -y irods-icommands-4.2.3*
 
 # install irods oidc auth plugin
@@ -73,23 +79,35 @@ ENV IRODS_OIDC="/opt/irods_auth_plugin_openid"
 RUN git clone https://github.com/irods-contrib/irods_auth_plugin_openid ${IRODS_OIDC} \
     && cd ${IRODS_OIDC} \
     # Try incrementing version to 4.2.3
-    && sed -i 's|IRODS 4.2.2 EXACT|IRODS 4.2.3 EXACT|g' CMakeLists.txt \
+#    && sed -i 's|IRODS 4.2.3 EXACT|IRODS 4.2.2 EXACT|g' CMakeLists.txt \
     && mkdir build \
     && cd build \
     && cmake .. \
-    && make -j$(nproc) package \
+    && make -j$(($(nproc)-1)) package \
     && yum install -y irods-auth-plugin-openid*
 
 # install davrods from source
-RUN yum install -y httpd-devel \
+RUN yum install -y httpd httpd-devel \
     && git clone https://github.com/UtrechtUniversity/davrods.git \
     && cd davrods \
     && sed -i 's|IRODSRT_VERSION "4.2.2"|IRODSRT_VERSION "4.2.3"|g' CMakeLists.txt \
     && mkdir build \
     && cd build \
     && cmake .. \
-    && make package \
+    && make -j2 package \
     && rpm -i davrods-4.2.3*
+
+# TODO remove if unneeded
+# install irods fuse from source
+RUN yum install -y fuse fuse-libs fuse-devel \
+    && git clone https://github.com/irods/irods_client_fuse \
+    && cd irods_client_fuse \
+    && mkdir build \
+    && cd build \
+    && cmake .. \
+    && make -j2 package \
+    && rpm -i irods-fuse-4.2.3*
+
 ###################################################################################################
 ###################################################################################################
 
@@ -108,13 +126,62 @@ RUN groupadd datacommons \
 USER dockeruser
 WORKDIR /home/dockeruser
 
+
+
+RUN touch /home/dockeruser/.profile \
+    && if [ ! -d ~/.irods ]; then mkdir ~/.irods; fi \
+    # set global httpd ServerName to localhost
+    && sudo sed -i 's|.*ServerName.*|ServerName localhost|g' /etc/httpd/conf/httpd.conf \
+    # set user/group for davfs
+    && sudo sed -i 's|^# dav_user.*|dav_user davfs2|g' /etc/davfs2/davfs2.conf \
+    && sudo sed -i 's|^# dav_group.*|dav_group davfs2|g' /etc/davfs2/davfs2.conf 
+ENV IRODS_MOUNT="/renci/irods"
+RUN if [ ! -d ${IRODS_MOUNT} ]; then \
+        sudo mkdir -p ${IRODS_MOUNT}; \
+        sudo chown "${user}:${group}" $IRODS_MOUNT; \
+    fi; \
+    if grep IRODS_MOUNT ~/.profile; then \
+        sed -i "s|^export IRODS_MOUNT=.*$|export IRODS_MOUNT=${IRODS_MOUNT}|g" ~/.profile; \
+    else \
+        echo "export IRODS_MOUNT=${IRODS_MOUNT}" >> ~/.profile; \
+    fi; \
+    # set up python 3 virtualenv for everything else
+    export VENV=~/venv \
+    && python3.6 -m venv $VENV \
+    && cd $VENV \
+    && source bin/activate \
+    && pip install stars \
+    # install cwltool fork 
+    && git clone https://github.com/stevencox/cwltool.git \
+    && cd cwltool && pip install .; cd $VENV
+RUN export TOIL_INSTALL=/opt/toil \
+    && echo "export TOIL_INSTALL=${TOIL_INSTALL}" >> ~/.profile \
+    && cd /opt \
+    && sudo git clone https://github.com/theferrit32/toil \
+    && sudo chown -R dockeruser:datacommons toil \
+    && cd toil \
+    && git checkout ff-2018-05-24 \
+    && bash ./install.sh \
+    && echo 12
+
+# TODO used for updating code without long rebuild
+RUN cd /opt/toil/ && source venv2.7/bin/activate \
+    && git pull && pip install -e . \
+    && echo 0
+
+RUN sudo yum install -y openssh-server \
+    && sudo yum clean all \
+    && sudo ssh-keygen -A \
+    && mkdir -p ~/.ssh \
+    && touch ~/.ssh/authorized_keys \
+    && chmod 700 ~/.ssh
+
 COPY ./base_postinstall.sh ./dc_toil_setup.sh ./base-start.sh /home/dockeruser/
 RUN sudo chmod +x /home/dockeruser/base_postinstall.sh \
     && sudo chmod +x /home/dockeruser/dc_toil_setup.sh \
-    && sudo chmod +x /home/dockeruser/base-start.sh \
-    && touch /home/dockeruser/.profile \
-    && bash dc_toil_setup.sh \
-    && bash base_postinstall.sh
+    && sudo chmod +x /home/dockeruser/base-start.sh 
+    ##&& bash dc_toil_setup.sh \
+    ##&& bash base_postinstall.sh
 
 COPY ./entrypoint.sh /home/dockeruser/
 RUN sudo chmod +x /home/dockeruser/entrypoint.sh
