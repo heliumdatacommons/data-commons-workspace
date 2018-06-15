@@ -8,29 +8,99 @@ RUN rpm --import https://packages.irods.org/irods-signing-key.asc \
     && yum install -y epel-release ius-release.rpm \
     && yum update -y \
     && yum install -y \
-        sudo python36u python36u-devel davfs2 gcc git nodejs docker iptables \
+        sudo python36u python36u-devel davfs2 gcc git nodejs docker \
     && yum clean all
 
 
 ###################################################################################################
 ###################################################################################################
 # build patched irods
-RUN yum install -y which make pam-devel unixODBC unixODBC-devel vim \
-    && yum clean all
+RUN yum install -y which make pam-devel unixODBC unixODBC-devel vim
 
+# irods build dependencies
+ENV IRODS_EXTERNALS="/opt/irods-externals"
+RUN rm -rf ${IRODS_EXTERNALS}-src; git clone https://github.com/irods/externals ${IRODS_EXTERNALS}-src \
+    && cd ${IRODS_EXTERNALS}-src \
+    # use pre-built packages, but still install the prereqs
+    && rpm --import https://packages.irods.org/irods-signing-key.asc \
+    && curl -s https://packages.irods.org/renci-irods.yum.repo | sudo tee /etc/yum.repos.d/renci-irods.yum.repo \
+    && yum install -y \
+        irods-externals-zeromq4-14.1.3-0 \
+        irods-externals-libarchive3.1.2-0 \
+        irods-externals-libarchive3.3.2-0 \
+        irods-externals-jansson2.7-0 \
+        irods-externals-cppzmq4.1-0 \
+        irods-externals-clang-runtime3.8-0 \
+        irods-externals-clang3.8-0 \
+        irods-externals-cmake3.5.2-0 \
+        irods-externals-avro1.7.7-0 \
+        irods-externals-boost1.60.0-0 \
+    && ./install_prerequisites.py
 
-RUN git clone https://github.com/heliumdatacommons/irods-packages.git /opt/irods-packages \
-    && cd /opt/irods-packages \
-    && yum install -y davrods-4.2.3_1.4.0-1.rpm \
-        irods-auth-plugin-openid-2.2.0-1.x86_64.rpm \
-        irods-database-plugin-postgres-4.2.3-1.x86_64.rpm \
-        irods-devel-4.2.3-1.x86_64.rpm \
-        irods-icommands-4.2.3-1.x86_64.rpm \
-        irods-resource-plugin-globus-2.0.0-1.x86_64.rpm \
-        irods-rule-engine-plugin-python-4.2.3-centos7-x86_64.rpm \
-        irods-runtime-4.2.3-1.x86_64.rpm \
-        irods-server-4.2.3-1.x86_64.rpm
+ENV PATH="${IRODS_EXTERNALS}/cmake3.5.2-0/bin:${PATH}"
+# build irods from fork
+# TODO when 4.2.3 is released, update to that version
+ENV IRODS="/opt/irods"
+RUN git clone https://github.com/theferrit32/irods ${IRODS} \
+    && cd ${IRODS} \
+    && git submodule update --init \
+    && git checkout 4-2-3-dev \
+    && mkdir build \
+    && cd build \
+    && cmake -DIRODS_EXTERNALS_PACKAGE_ROOT=${IRODS_EXTERNALS} .. \
+    && make -j6 package \
+    && yum install -y irods-devel-4.2.3* irods-runtime-4.2.3* \
+    && echo 1
 
+# build irods icommands
+#RUN yum install -y irods-icommands
+ENV IRODS_CLIENT_ICOMMANDS="/opt/irods_client_icommands"
+RUN git clone https://github.com/heliumdatacommons/irods_client_icommands ${IRODS_CLIENT_ICOMMANDS} \
+    && cd ${IRODS_CLIENT_ICOMMANDS} \
+    && git checkout 4-2-stable \
+    #&& sed -i 's|IRODS 4.2.2 EXACT|IRODS 4.2.3 EXACT|g' CMakeLists.txt \
+    && mkdir build \
+    && cd build \
+    && cmake .. \
+    && make -j6 package \
+    && yum install -y irods-icommands-4.2.3* \
+    && echo 1
+
+# install irods oidc auth plugin
+ENV IRODS_OIDC="/opt/irods_auth_plugin_openid"
+RUN git clone https://github.com/irods-contrib/irods_auth_plugin_openid ${IRODS_OIDC} \
+    && cd ${IRODS_OIDC} \
+    # Try incrementing version to 4.2.3
+#    && sed -i 's|IRODS 4.2.3 EXACT|IRODS 4.2.2 EXACT|g' CMakeLists.txt \
+    && mkdir build \
+    && cd build \
+    && cmake .. \
+    && make -j4 package \
+    && yum install -y irods-auth-plugin-openid* \
+    && echo 2
+
+# install davrods from source
+ENV IRODS_DAVRODS="/opt/davrods"
+RUN yum install -y httpd httpd-devel \
+    && git clone https://github.com/theferrit32/davrods.git ${IRODS_DAVRODS} \
+    && cd ${IRODS_DAVRODS} \
+    && sed -i 's|IRODSRT_VERSION "4.2.2"|IRODSRT_VERSION "4.2.3"|g' CMakeLists.txt \
+    && mkdir build \
+    && cd build \
+    && cmake .. \
+    && make -j4 package \
+    && rpm -i davrods-4.2.3*
+
+# TODO remove if unneeded
+# install irods fuse from source
+RUN yum install -y fuse fuse-libs fuse-devel \
+    && git clone https://github.com/irods/irods_client_fuse \
+    && cd irods_client_fuse \
+    && mkdir build \
+    && cd build \
+    && cmake .. \
+    && make -j4 package \
+    && rpm -i irods-fuse-4.2.3*
 
 ###################################################################################################
 ###################################################################################################
@@ -75,8 +145,8 @@ RUN if [ ! -d ${IRODS_MOUNT} ]; then \
     && pip install stars \
     # install cwltool fork 
     && git clone https://github.com/stevencox/cwltool.git \
-    && cd cwltool && pip install .; cd $VENV \
-    && export TOIL_INSTALL=/opt/toil \
+    && cd cwltool && pip install .; cd $VENV
+RUN export TOIL_INSTALL=/opt/toil \
     && echo "export TOIL_INSTALL=${TOIL_INSTALL}" >> ~/.profile \
     && cd /opt \
     && sudo git clone https://github.com/theferrit32/toil \
@@ -84,7 +154,7 @@ RUN if [ ! -d ${IRODS_MOUNT} ]; then \
     && cd toil \
     && git checkout ff-2018-05-24 \
     && bash ./install.sh \
-    && echo 0
+    && echo 13
 
 # TODO used for updating code without long rebuild
 RUN cd /opt/toil/ && source venv2.7/bin/activate \

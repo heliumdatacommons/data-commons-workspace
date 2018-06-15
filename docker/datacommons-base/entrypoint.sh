@@ -3,7 +3,18 @@
 cd ~/
 . ~/.profile
 
-# Write iRODS enviornment configuration to files
+# make env vars persistent
+declare -a env_vars=("IRODS_PORT" "IRODS_HOST" "IRODS_HOME" "IRODS_USER_NAME" "IRODS_PASSWORD" "IRODS_ZONE_NAME" "CHRONOS_URL" "SSH_PUBKEY")
+for i in "${env_vars[@]}"; do
+    if [ ! -z "$(env | grep ${i})" ]; then
+        key=$(echo $(env | grep ${i}) | awk -F= '{print $1}')
+        val=$(echo $(env | grep ${i}) | awk -F= '{print $2}')
+        echo "export $key='$val'" >> ~/.bashrc
+        #echo "export $i='$(echo ${$i})'" >> ~/.bashrc
+    fi
+done
+
+# Write iRODS environment configuration to files
 if [ ! -z "$IRODS_PORT" ] && \
     [ ! -z "$IRODS_HOST" ] && \
     [ ! -z "$IRODS_USER_NAME" ] && \
@@ -20,6 +31,12 @@ then
     fi
     if [ ! -z "$IRODS_CWD" ]; then
         irods_environment=${irods_environment}', "irods_cwd": "'${IRODS_CWD}'"'
+    fi
+    if [ ! -z "$IRODS_AUTHENTICATION_SCHEME" ]; then
+        irods_environment=${irods_environment}', "irods_authentication_scheme": "'${IRODS_AUTHENTICATION_SCHEME}'"'
+        if [ ! -z "$IRODS_OPENID_PROVIDER" ]; then
+            irods_environment=${irods_environment}', "openid_provider": "'${IRODS_OPENID_PROVIDER}'"'
+        fi
     fi
 
     irods_environment=${irods_environment}' }'
@@ -64,12 +81,27 @@ then
     #sudo cat /etc/httpd/conf.d/davrods-vhost.conf
 fi
 
+
+
+
 if [ ! -f ~/.irods/.irodsA ]; then
     # irods not initialized
     echo "iRODS not initialized"
+    if [ ! -z "$IRODS_ACCESS_TOKEN" ] \
+         && [ ! -z "${IRODS_AUTHENTICATION_SCHEME}" ] \
+         && [ "${IRODS_AUTHENTICATION_SCHEME}" = "openid" ]; then
+        echo "Authenticating to iRODS using provided access token"
+        echo "act:${IRODS_ACCESS_TOKEN}" > ~/.irods/.irodsA
 
-    if [ ! -z "$IRODS_PASSWORD" ]; then
+        # webdav credentials
+        sudo sed -i "s|DavRodsAuthScheme Native|DavRodsAuthScheme OpenID|g" /etc/httpd/conf.d/davrods-vhost.conf
+        echo "http://localhost:80 ${IRODS_USER_NAME} access_token=${IRODS_ACCESS_TOKEN}" | sudo tee -a /etc/davfs2/secrets >> /dev/null
+
+        # test initial icommands conn
+        iinit "${IRODS_ACCESS_TOKEN}"
+    elif [ ! -z "$IRODS_PASSWORD" ]; then
         echo "Authenticating to iRODS using provided password"
+        echo "http://localhost:80 ${IRODS_USER_NAME} ${IRODS_PASSWORD}" | sudo tee -a /etc/davfs2/secrets >> /dev/null
         iinit "$IRODS_PASSWORD"
     else
         echo "Authenticating to iRODS using standard input"
@@ -94,13 +126,17 @@ if [ $x -eq $wait_limit ]; then
 fi
 
 # mount the webdav port to the filesystem
-echo "http://localhost:80 ${IRODS_USER_NAME} ${IRODS_PASSWORD}" | sudo tee -a /etc/davfs2/secrets >> /dev/null
-#sudo mkdir /renci/irods/webdav
+
+#sudo mkdir /renci/irods/
+export IRODS_MOUNT="/renci/irods"
+sudo chown -R dockeruser:datacommons ${IRODS_MOUNT}
 sudo mount -t davfs -o uid=dockeruser,gid=datacommons "http://localhost:80" ${IRODS_MOUNT}
 
 
 # allow fuse cross-user access so docker as root can see irods
-sudo sed -i 's/^#.*user_allow_other/user_allow_other/g' /etc/fuse.conf
+#sudo sed -i 's/^#.*user_allow_other/user_allow_other/g' /etc/fuse.conf
 # mount irods fuse
-#sudo chmod -R dockeruser:datacommons /renci/irods
+#sudo mkdir -p /renci/irods/
+#sudo chown -R dockeruser:datacommons /renci/irods
+#icd "/${IRODS_ZONE_NAME}"
 #irodsFs -onocache -oallow_other /renci/irods
