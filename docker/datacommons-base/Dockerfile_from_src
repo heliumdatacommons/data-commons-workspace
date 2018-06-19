@@ -8,7 +8,7 @@ RUN rpm --import https://packages.irods.org/irods-signing-key.asc \
     && yum install -y epel-release ius-release.rpm \
     && yum update -y \
     && yum install -y \
-        sudo python36u python36u-devel davfs2 gcc git nodejs docker \
+        sudo python36u python36u-devel davfs2 gcc git nodejs docker iptables \
     && yum clean all
 
 

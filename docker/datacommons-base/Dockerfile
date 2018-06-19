@@ -8,15 +8,15 @@ RUN rpm --import https://packages.irods.org/irods-signing-key.asc \
     && yum install -y epel-release ius-release.rpm \
     && yum update -y \
     && yum install -y \
-        sudo python36u python36u-devel davfs2 gcc git nodejs docker iptables \
+        sudo python36u python36u-devel davfs2 git gcc nodejs docker iptables vim \
     && yum clean all
 
 
 ###################################################################################################
 ###################################################################################################
 # build patched irods
-RUN yum install -y which make pam-devel unixODBC unixODBC-devel vim \
-    && yum clean all
+#RUN yum install -y which make pam-devel unixODBC unixODBC-devel vim \
+#    && yum clean all
 
 
 RUN git clone https://github.com/heliumdatacommons/irods-packages.git /opt/irods-packages \
@@ -89,7 +89,7 @@ RUN if [ ! -d ${IRODS_MOUNT} ]; then \
 # TODO used for updating code without long rebuild
 RUN cd /opt/toil/ && source venv2.7/bin/activate \
     && git pull && pip install -e . \
-    && echo 0
+    && echo 1
 
 RUN sudo yum install -y openssh-server \
     && sudo yum clean all \
