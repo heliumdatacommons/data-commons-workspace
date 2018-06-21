@@ -1,15 +1,21 @@
 #!/bin/bash
 
 cd ~/
+bash /home/dockeruser/entrypoint.sh
 . ~/.profile
 
-bash /home/dockeruser/entrypoint.sh
-
 # For Toil
-sudo mkdir -p /var/log/datacommons
-sudo chown -R dockeruser:datacommons /var/log/datacommons
-toillog=/var/log/datacommons/toillog
-touch ${toillog}
+#sudo mkdir -p /var/log/datacommons
+#sudo chown -R dockeruser:datacommons /var/log/datacommons
+timestamp=$(date +%H:%m:%ST%Y-%M-%d%z)
+logdir="${IRODS_MOUNT}/${IRODS_HOME#$IRODS_CWD}/.log" # irods home path minus the cwd, if they overlap, appended to the irods mountpoint
+#logdir=${IRODS_MOUNT}/${IRODS_HOME}/.log
+echo "logdir: $logdir"
+mkdir -p $logdir
+toilworkerlog=${logdir}/toil_worker_${timestamp}
+toilexeclog=${logdir}/toil_exec_${timestamp}
+cwlworkerlog=${logdir}/cwl_worker_${timestamp}
+cwlexeclog=${logdir}/cwl_exec_${timestamp}
 
 echo "base-start: [$@]"
 env
@@ -36,19 +42,23 @@ else
     elif [ "$1" == "_toil_worker" ]; then
         echo "running _toil_worker [${@:2}]"
         cd /opt/toil/ && source venv2.7/bin/activate
-        _toil_worker ${@:2}
+        touch $toilworkerlog
+        _toil_worker ${@:2} 2>&1 | tee $toilworkerlog
         #/usr/bin/_toil_worker "${@:2}"
     elif [ "$1" == "_cwl_worker" ]; then
         echo "running _cwl_worker [${@:2}]"
         # run commands in virtualenvironment
         cd ~/venv && source bin/activate
-        bash -c "${@:2}"
+        touch $cwlworkerlog
+        bash -c "${@:2}" 2>&1 | tee $cwlworkerlog
     elif [ "$1" == "_toil_exec" ]; then
         echo "running _toil_exec"
-        toilvenv "${@:2}"
+        touch $toilexeclog
+        toilvenv "${@:2}" 2>&1 | tee $toilexeclog
     elif [ "$1" == "_cwl_exec" ]; then
         echo "running _cwl_exec"
-        venv "${@:2}"
+        touch $cwlexeclog
+        venv "${@:2}" 2>&1 | tee $cwlexeclog
     fi
 fi
 #echo "CALLING SYNC"

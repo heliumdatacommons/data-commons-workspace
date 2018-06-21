@@ -10,6 +10,7 @@ for i in "${env_vars[@]}"; do
         key=$(echo $(env | grep ${i}) | awk -F= '{print $1}')
         val=$(echo $(env | grep ${i}) | awk -F= '{print $2}')
         echo "export $key='$val'" >> ~/.bashrc
+        echo "export $key='$val'" >> ~/.profile
         #echo "export $i='$(echo ${$i})'" >> ~/.bashrc
     fi
 done
