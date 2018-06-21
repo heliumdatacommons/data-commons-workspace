@@ -10,7 +10,7 @@ IRODS_HOST = 'test.commonsshare.org'
 IRODS_PORT = '1247'
 IRODS_ZONE = 'commonssharetestZone'
 IRODS_CWD = '/'+IRODS_ZONE
-IRODS_HOME = '/'+IRODS_ZONE
+IRODS_HOME = '/{}/home/{}'
 
 def main(argv):
     parser = argparse.ArgumentParser(description="Helpful launcher script for Helium Data Commons containers")
@@ -50,7 +50,7 @@ def main(argv):
         parser.add_argument('--irods-host', type=str, default=IRODS_HOST, help='iRODS host to connect to.')
         parser.add_argument('--irods-port', type=str, default=IRODS_PORT, help='iRODS port to connect to.')
         parser.add_argument('--irods-zone', type=str, default=IRODS_ZONE, help='iRODS zone to connect to.')
-        parser.add_argument('--irods-home', type=str, default=IRODS_HOME, help='iRODS home to use.')
+        parser.add_argument('--irods-home', type=str, default=None, help='iRODS home to use.')
         parser.add_argument('--irods-cwd', type=str, default=IRODS_CWD, help='iRODS collection to mount.')
         parser.add_argument('--chronos-url', type=str, default=CHRONOS_URL, help='Chronos instance to send jobs to.')
         parser.add_argument('--openid-provider', type=str, help='When using access token, specify provider, otherwise uses default provider')
@@ -70,6 +70,9 @@ def main(argv):
             exit(1)
         build(options)
     elif options.subcommand == 'run':
+        # post process IRODS_HOME if not provided
+        if options.irods_home is None:
+            options.irods_home = IRODS_HOME.format(options.irods_zone, options.username)
         if options.image is None:
             run_parser.print_help()
             exit(1)
@@ -85,7 +88,7 @@ def build(options):
     for line in proc.stdout:
         print(line, end='')
     ret = proc.wait()
-    print('build({} returned status_code: {}'.format(imagename, ret))
+    print('build({}) returned status_code: {}'.format(imagename, ret))
 
 def run(options):
     env = {}
@@ -109,17 +112,27 @@ def run(options):
         '--name', 'dc_{}'.format(options.image), '-p', '90:80'] \
         + env_args \
         + ['heliumdatacommons/datacommons-{}'.format(options.image)]
-    if options.toil:
-        run_args.append('toilvenv')
-    elif options.cwl:
-        run_args.append('venv')
+    if options.image == 'base':
+        if options.toil:
+            run_args.append('toilvenv')
+        elif options.cwl:
+            run_args.append('venv')
+    elif options.image == 'jupyter':
+        if options.wes_server:
+            run_args.append('wes-server')
+        elif options.jupyter:
+            run_args.append('jupyter')
+        elif options.venv:
+            run_args.append('venv')
+    else:
+        raise RuntimeError('Unknown image: {}'.format(options.image))
     print(run_args)
     print('COMMAND STRING: \n{}'.format(' '.join(run_args)))
     proc = subprocess.Popen(run_args, universal_newlines=True)
     #for line in proc.stdout:
     #    print(line)
     ret = proc.wait()
-    print('run({} returned status_code: {}'.format(options.image, ret))
+    print('run({}) returned status_code: {}'.format(options.image, ret))
 
 if __name__ == "__main__":
     main(sys.argv[1:])
