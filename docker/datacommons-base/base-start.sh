@@ -2,14 +2,12 @@
 
 cd ~/
 bash /home/dockeruser/entrypoint.sh
-. ~/.profile
+. ~/.profile # pull any updated values set in entrypoint.sh
 
-# For Toil
-#sudo mkdir -p /var/log/datacommons
-#sudo chown -R dockeruser:datacommons /var/log/datacommons
+# For logs
 timestamp=$(date +%H:%m:%ST%Y-%M-%d%z)
-logdir="${IRODS_MOUNT}/${IRODS_HOME#$IRODS_CWD}/.log" # irods home path minus the cwd, if they overlap, appended to the irods mountpoint
-#logdir=${IRODS_MOUNT}/${IRODS_HOME}/.log
+DAVRODS_CWD="/${IRODS_ZONE_NAME}"
+logdir="${IRODS_MOUNT}${IRODS_HOME#$DAVRODS_CWD}/.log" # irods home path minus the cwd, if they overlap, appended to the irods mountpoint
 echo "logdir: $logdir"
 mkdir -p $logdir
 toilworkerlog=${logdir}/toil_worker_${timestamp}
@@ -18,15 +16,16 @@ cwlworkerlog=${logdir}/cwl_worker_${timestamp}
 cwlexeclog=${logdir}/cwl_exec_${timestamp}
 
 echo "base-start: [$@]"
-env
+env #TODO remove
 
 if [ ! -z "$SSH_PUBKEY" ]; then
     echo "${SSH_PUBKEY}" >> ~/.ssh/authorized_keys
 fi
 
 # start dockerd
-sudo /usr/bin/dockerd-current --add-runtime docker-runc=/usr/libexec/docker/docker-runc-current --default-runtime=docker-runc  --userland-proxy-path=/usr/libexec/docker/docker-proxy-current --log-driver=json-file 2>&1 > /tmp/dockerd.log &
-echo
+sudo /usr/bin/dockerd-current \
+    --add-runtime docker-runc=/usr/libexec/docker/docker-runc-current \
+    --default-runtime=docker-runc > /tmp/dockerd.log 2>&1 &
 
 # Determine which virtual env to start at run time
 if [ "$1" == "sshd" ]; then

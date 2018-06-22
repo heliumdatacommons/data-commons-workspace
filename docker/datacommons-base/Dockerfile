@@ -89,7 +89,7 @@ RUN if [ ! -d ${IRODS_MOUNT} ]; then \
 # TODO used for updating code without long rebuild
 RUN cd /opt/toil/ && source venv2.7/bin/activate \
     && git pull && pip install -e . \
-    && echo 1
+    && echo 0
 
 RUN sudo yum install -y openssh-server \
     && sudo yum clean all \
@@ -101,9 +101,7 @@ RUN sudo yum install -y openssh-server \
 COPY ./base_postinstall.sh ./dc_toil_setup.sh ./base-start.sh /home/dockeruser/
 RUN sudo chmod +x /home/dockeruser/base_postinstall.sh \
     && sudo chmod +x /home/dockeruser/dc_toil_setup.sh \
-    && sudo chmod +x /home/dockeruser/base-start.sh 
-    ##&& bash dc_toil_setup.sh \
-    ##&& bash base_postinstall.sh
+    && sudo chmod +x /home/dockeruser/base-start.sh
 
 COPY ./entrypoint.sh ./run-cwl.sh /home/dockeruser/
 RUN sudo chmod +x /home/dockeruser/entrypoint.sh \

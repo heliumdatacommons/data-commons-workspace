@@ -45,14 +45,8 @@ then
     echo $irods_environment | sudo tee /etc/httpd/irods/irods_environment.json
 fi
 
-# Decide on DAVRODS_ROOT value
-if [ ! -z "$IRODS_CWD" ]
-then
-    DAVRODS_ROOT=$IRODS_CWD
-else
-    DAVRODS_ROOT='Zone'
-fi
-echo "DAVRODS_ROOT variable is: ${DAVRODS_ROOT}"
+# always use the zone as the cwd of the davrods connection
+DAVRODS_ROOT='Zone'
 
 # Replace values in Davrods config file
 if [ ! -z "$IRODS_PORT" ] && \
@@ -79,10 +73,9 @@ then
         done
     }
     configurer
-    #sudo cat /etc/httpd/conf.d/davrods-vhost.conf
+else
+    echo "IRODS_PORT, IRODS_HOST, and IRODS_ZONE_NAME must defined for automated mount"
 fi
-
-
 
 
 if [ ! -f ~/.irods/.irodsA ]; then
