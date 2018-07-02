@@ -123,14 +123,14 @@ fi
 
 #sudo mkdir /renci/irods/
 export IRODS_MOUNT="/renci/irods"
+sudo mkdir -p ${IRODS_MOUNT}
 sudo chown -R dockeruser:datacommons ${IRODS_MOUNT}
-sudo mount -t davfs -o uid=dockeruser,gid=datacommons "http://localhost:80" ${IRODS_MOUNT}
 
+# mount davrods
+sudo mount.davfs -o uid=dockeruser,gid=datacommons "http://localhost:80" ${IRODS_MOUNT}
 
-# allow fuse cross-user access so docker as root can see irods
-#sudo sed -i 's/^#.*user_allow_other/user_allow_other/g' /etc/fuse.conf
 # mount irods fuse
-#sudo mkdir -p /renci/irods/
-#sudo chown -R dockeruser:datacommons /renci/irods
-#icd "/${IRODS_ZONE_NAME}"
+# allow fuse cross-user access so docker as root can see irods
+sudo sed -i 's/^#.*user_allow_other/user_allow_other/g' /etc/fuse.conf
+# mount
 #irodsFs -onocache -oallow_other /renci/irods

@@ -4,6 +4,10 @@ cd ~/
 bash /home/dockeruser/entrypoint.sh
 . ~/.profile # pull any updated values set in entrypoint.sh
 
+if [ -d /toil-intermediate ]; then
+    sudo chown -R dockeruser:datacommons /toil-intermediate
+fi
+
 # For logs
 timestamp=$(date +%H:%m:%ST%Y-%M-%d%z)
 DAVRODS_CWD="/${IRODS_ZONE_NAME}"
@@ -60,6 +64,9 @@ else
         venv "${@:2}" 2>&1 | tee $cwlexeclog
     fi
 fi
-#echo "CALLING SYNC"
+echo "calling sync"
+sync
 sudo umount.davfs ${IRODS_MOUNT}
+echo "finished sync"
+#fusermount -u ${IRODS_MOUNT}
 #bash -i

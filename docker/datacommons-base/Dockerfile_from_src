@@ -38,6 +38,7 @@ RUN rm -rf ${IRODS_EXTERNALS}-src; git clone https://github.com/irods/externals 
     && ./install_prerequisites.py
 
 ENV PATH="${IRODS_EXTERNALS}/cmake3.5.2-0/bin:${PATH}"
+RUN echo "${IRODS_EXTERNALS}/cmake3.5.2-0/bin:${PATH}" >> ~/.profile
 # build irods from fork
 # TODO when 4.2.3 is released, update to that version
 ENV IRODS="/opt/irods"
@@ -93,9 +94,10 @@ RUN yum install -y httpd httpd-devel \
 
 # TODO remove if unneeded
 # install irods fuse from source
+ENV IRODS_FUSE="/opt/irods_client_fuse"
 RUN yum install -y fuse fuse-libs fuse-devel \
-    && git clone https://github.com/irods/irods_client_fuse \
-    && cd irods_client_fuse \
+    && git clone https://github.com/irods/irods_client_fuse ${IRODS_FUSE} \
+    && cd ${IRODS_FUSE} \
     && mkdir build \
     && cd build \
     && cmake .. \
@@ -126,7 +128,10 @@ RUN touch /home/dockeruser/.profile \
     && sudo sed -i 's|.*ServerName.*|ServerName localhost|g' /etc/httpd/conf/httpd.conf \
     # set user/group for davfs
     && sudo sed -i 's|^# dav_user.*|dav_user davfs2|g' /etc/davfs2/davfs2.conf \
-    && sudo sed -i 's|^# dav_group.*|dav_group davfs2|g' /etc/davfs2/davfs2.conf 
+    && sudo sed -i 's|^# dav_group.*|dav_group davfs2|g' /etc/davfs2/davfs2.conf \
+    && sudo sed -i 's|^# dir_refresh.*|dir_refresh 3|g' /etc/davfs2/davfs2.conf \
+    && sudo sed -i 's|^# file_refresh.*|file_refresh 1|g' /etc/davfs2/davfs2.conf \
+    && sudo sed -i 's|^# delay_upload.*|delay_upload 0|g' /etc/davfs2/davfs2.conf
 ENV IRODS_MOUNT="/renci/irods"
 RUN if [ ! -d ${IRODS_MOUNT} ]; then \
         sudo mkdir -p ${IRODS_MOUNT}; \

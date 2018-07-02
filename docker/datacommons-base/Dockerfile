@@ -29,7 +29,8 @@ RUN git clone https://github.com/heliumdatacommons/irods-packages.git /opt/irods
         irods-resource-plugin-globus-2.0.0-1.x86_64.rpm \
         irods-rule-engine-plugin-python-4.2.3-centos7-x86_64.rpm \
         irods-runtime-4.2.3-1.x86_64.rpm \
-        irods-server-4.2.3-1.x86_64.rpm
+        irods-server-4.2.3-1.x86_64.rpm \
+        fuse fuse-libs irods-fuse-4.2.3-centos7-x86_64.rpm
 
 
 ###################################################################################################
@@ -56,7 +57,10 @@ RUN touch /home/dockeruser/.profile \
     && sudo sed -i 's|.*ServerName.*|ServerName localhost|g' /etc/httpd/conf/httpd.conf \
     # set user/group for davfs
     && sudo sed -i 's|^# dav_user.*|dav_user davfs2|g' /etc/davfs2/davfs2.conf \
-    && sudo sed -i 's|^# dav_group.*|dav_group davfs2|g' /etc/davfs2/davfs2.conf 
+    && sudo sed -i 's|^# dav_group.*|dav_group davfs2|g' /etc/davfs2/davfs2.conf \
+    && sudo sed -i 's|^# dir_refresh.*|dir_refresh 3|g' /etc/davfs2/davfs2.conf \
+    && sudo sed -i 's|^# file_refresh.*|file_refresh 1|g' /etc/davfs2/davfs2.conf \
+    && sudo sed -i 's|^# delay_upload.*|delay_upload 0|g' /etc/davfs2/davfs2.conf
 ENV IRODS_MOUNT="/renci/irods"
 RUN if [ ! -d ${IRODS_MOUNT} ]; then \
         sudo mkdir -p ${IRODS_MOUNT}; \
@@ -82,9 +86,10 @@ RUN if [ ! -d ${IRODS_MOUNT} ]; then \
     && sudo git clone https://github.com/theferrit32/toil \
     && sudo chown -R dockeruser:datacommons toil \
     && cd toil \
-    && git checkout ff-2018-05-24 \
+    && git checkout rebase-2018-06-29 \
+    #ff-2018-06-25 \
     && bash ./install.sh \
-    && echo 0
+    && echo 5
 
 # TODO used for updating code without long rebuild
 RUN cd /opt/toil/ && source venv2.7/bin/activate \
