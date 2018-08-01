@@ -71,16 +71,16 @@ RUN if [ ! -d ${IRODS_MOUNT} ]; then \
     else \
         echo "export IRODS_MOUNT=${IRODS_MOUNT}" >> ~/.profile; \
     fi; \
-    # set up python 3 virtualenv for everything else
+    # set up python 3 virtualenv
     export VENV=~/venv \
     && python3.6 -m venv $VENV \
     && cd $VENV \
-    && source bin/activate \
-    && pip install stars \
+    #&&source bin/activate \
+    #& pip install stars \
     # install cwltool fork 
-    && git clone https://github.com/stevencox/cwltool.git \
-    && cd cwltool && pip install .; cd $VENV \
-    && export TOIL_INSTALL=/opt/toil \
+    #&& git clone https://github.com/stevencox/cwltool.git \
+    #&& cd cwltool && pip install .; cd $VENV \
+     export TOIL_INSTALL=/opt/toil \
     && echo "export TOIL_INSTALL=${TOIL_INSTALL}" >> ~/.profile \
     && cd /opt \
     && sudo git clone https://github.com/theferrit32/toil \
@@ -88,8 +88,22 @@ RUN if [ ! -d ${IRODS_MOUNT} ]; then \
     && cd toil \
     && git checkout rebase-2018-06-29 \
     #ff-2018-06-25 \
-    && bash ./install.sh \
-    && echo 5
+    && sudo yum install -y python-pip python-devel \
+    && sudo pip2.7 install virtualenv \
+    && virtualenv -p python2.7 venv2.7 \
+    && source venv2.7/bin/activate \
+    && pip2.7 install pip==8.1.2 \
+    && pip2.7 install chronos-python \
+    && sudo git clone https://github.com/stevencox/cwltool.git /opt/cwltool \
+    && sudo chown -R dockeruser:datacommons /opt/cwltool \
+    && cd /opt/cwltool \
+    && git checkout open_permissions \
+    && pip2.7 install -e . \
+    && cd /opt/toil \
+    && pip2.7 install -e .[cwl,mesos,aws] \
+    && sudo ln -s $(pwd)/_toil_worker.sh /usr/bin/_toil_worker \
+    #&& bash ./install.sh \
+    && echo 10
 
 # TODO used for updating code without long rebuild
 RUN cd /opt/toil/ && source venv2.7/bin/activate \

@@ -4,9 +4,9 @@ cd ~/
 bash /home/dockeruser/entrypoint.sh
 . ~/.profile # pull any updated values set in entrypoint.sh
 
-if [ -d /toil-intermediate ]; then
-    sudo chown -R dockeruser:datacommons /toil-intermediate
-fi
+#if [ -d /toil-intermediate ]; then
+    #sudo chown -R dockeruser:datacommons /toil-intermediate
+#fi
 
 # For logs
 timestamp=$(date +%H:%m:%ST%Y-%M-%d%z)
