@@ -83,7 +83,7 @@ def main(argv):
 def build(options):
     os.chdir('docker')
     imagename = options.image
-    build_args = ['/usr/bin/bash', 'build-{}.sh'.format(imagename)]
+    build_args = ['/bin/bash', 'build-{}.sh'.format(imagename)]
     proc = subprocess.Popen(build_args, stdout=subprocess.PIPE, universal_newlines=True)
     for line in proc.stdout:
         print(line, end='')
