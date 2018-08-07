@@ -7,4 +7,4 @@ sudo chown -R dockeruser:datacommons toil
 cd toil
 ./install.sh
 
-sudo yum clean all
+sudo apt clean all

@@ -2,13 +2,17 @@
 
 cd ~/
 . ~/.profile
+echo "ENTRYPOINT\n\n"
+env
 
 # make env vars persistent
 declare -a env_vars=("IRODS_PORT" "IRODS_HOST" "IRODS_HOME" "IRODS_USER_NAME" "IRODS_PASSWORD" "IRODS_ZONE_NAME" "CHRONOS_URL" "SSH_PUBKEY")
 for i in "${env_vars[@]}"; do
     if [ ! -z "$(env | grep ${i})" ]; then
-        key=$(echo $(env | grep ${i}) | awk -F= '{print $1}')
-        val=$(echo $(env | grep ${i}) | awk -F= '{print $2}')
+        echo "checking ${i}"
+        key=$(echo $(env | grep "${i}") | awk -F= '{print $1}') # first col
+        val=$(echo $(env | grep "${i}"))
+        val=${val#"${key}="}
         echo "export $key='$val'" >> ~/.bashrc
         echo "export $key='$val'" >> ~/.profile
         #echo "export $i='$(echo ${$i})'" >> ~/.bashrc
@@ -42,7 +46,8 @@ then
 
     irods_environment=${irods_environment}' }'
     echo $irods_environment > ~/.irods/irods_environment.json
-    echo $irods_environment | sudo tee /etc/httpd/irods/irods_environment.json
+    sudo mkdir -p /etc/apache2/irods/
+    echo $irods_environment | sudo tee /etc/apache2/irods/irods_environment.json
 fi
 
 # always use the zone as the cwd of the davrods connection
@@ -69,7 +74,7 @@ then
             replace=${irods_config[$i]}
             #if [[ $replace == /* ]]; then replace='\'$replace; fi
             # Note the "" after -i, needed in OS X
-            sudo sed -i "s|${search}|${replace}|g" /etc/httpd/conf.d/davrods-vhost.conf
+            sudo sed -i "s|${search}|${replace}|g" /etc/apache2/sites-available/davrods-vhost.conf
         done
     }
     configurer
@@ -88,7 +93,7 @@ if [ ! -f ~/.irods/.irodsA ]; then
         echo "act:${IRODS_ACCESS_TOKEN}" > ~/.irods/.irodsA
 
         # webdav credentials
-        sudo sed -i "s|DavRodsAuthScheme Native|DavRodsAuthScheme OpenID|g" /etc/httpd/conf.d/davrods-vhost.conf
+        sudo sed -i "s|DavRodsAuthScheme Native|DavRodsAuthScheme OpenID|g" /etc/apache2/sites-available/davrods-vhost.conf
         echo "http://localhost:80 ${IRODS_USER_NAME} access_token=${IRODS_ACCESS_TOKEN}" | sudo tee -a /etc/davfs2/secrets >> /dev/null
 
         # test initial icommands conn
@@ -103,8 +108,19 @@ if [ ! -f ~/.irods/.irodsA ]; then
     fi
 fi
 
-# start apache for webdav (port 80)
-sudo /usr/sbin/httpd &
+export IRODS_MOUNT="/renci/irods"
+sudo mkdir -p ${IRODS_MOUNT}
+sudo chown -R dockeruser:datacommons ${IRODS_MOUNT}
+
+# mount davrods
+# begin ubuntu_specific
+sudo a2enmod -q dav # WebDAV(davfs2) must be loaded before davrods
+sudo a2enmod -q davrods
+sudo a2dissite -q 000-default # turn off root site, shadows davrods
+sudo a2ensite -q davrods-vhost
+sudo a2ensite -q davrods-anonymous-vhost
+sudo apache2ctl start
+# end ubuntu_specific
 
 # avoid davfs2 retries and possible failure by waiting for httpd to start first
 wait_limit=30 # max seconds to wait
@@ -116,21 +132,14 @@ while ! curl localhost:80 >/dev/null 2>&1 && [ $x -lt $wait_limit ]; do
     sleep 1
 done; echo
 if [ $x -eq $wait_limit ]; then
-    echo "httpd did not start in under $wait_limit seconds"
+    echo "Apache server did not start in under $wait_limit seconds"
 fi
 
-# mount the webdav port to the filesystem
-
-#sudo mkdir /renci/irods/
-export IRODS_MOUNT="/renci/irods"
-sudo mkdir -p ${IRODS_MOUNT}
-sudo chown -R dockeruser:datacommons ${IRODS_MOUNT}
-
-# mount davrods
-sudo mount.davfs -o uid=dockeruser,gid=datacommons "http://localhost:80" ${IRODS_MOUNT}
+# now that apache with davrods module is up, mount it to fs
+sudo mount -t davfs -o uid=dockeruser,gid=datacommons "http://localhost:80" ${IRODS_MOUNT}
 
 # mount irods fuse
 # allow fuse cross-user access so docker as root can see irods
-sudo sed -i 's/^#.*user_allow_other/user_allow_other/g' /etc/fuse.conf
+#sudo sed -i 's/^#.*user_allow_other/user_allow_other/g' /etc/fuse.conf
 # mount
 #irodsFs -onocache -oallow_other /renci/irods

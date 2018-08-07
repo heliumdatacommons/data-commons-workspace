@@ -11,8 +11,8 @@ git clone https://github.com/stevencox/workflow-service.git
 cd workflow-service && pip install .; cd $VENV
 
 
-sudo yum install -y krb5-devel
-sudo yum clean all
+sudo apt install -y libkrb5-dev
+sudo apt clean all
 pip install sparkmagic
 set -x
 jupyter nbextension enable --py --sys-prefix widgetsnbextension

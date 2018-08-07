@@ -1,0 +1,132 @@
+FROM centos:centos7
+
+# add irods repo
+RUN rpm --import https://packages.irods.org/irods-signing-key.asc \
+        && curl https://packages.irods.org/renci-irods.yum.repo | tee /etc/yum.repos.d/renci-irods.yum.repo \
+    # IUS let their TLS cert expire on May 8, 2018, 7:59 PM
+    && curl -O --insecure --location https://centos7.iuscommunity.org/ius-release.rpm \
+    && yum install -y epel-release ius-release.rpm \
+    && yum update -y \
+    && yum install -y \
+        sudo python36u python36u-devel davfs2 git gcc nodejs docker iptables vim \
+    && yum clean all
+
+
+###################################################################################################
+###################################################################################################
+# build patched irods
+#RUN yum install -y which make pam-devel unixODBC unixODBC-devel vim \
+#    && yum clean all
+
+
+RUN git clone https://github.com/heliumdatacommons/irods-packages.git /opt/irods-packages \
+    && cd /opt/irods-packages \
+    && yum install -y davrods-4.2.3_1.4.0-1.rpm \
+        irods-auth-plugin-openid-2.2.0-1.x86_64.rpm \
+        irods-database-plugin-postgres-4.2.3-1.x86_64.rpm \
+        irods-devel-4.2.3-1.x86_64.rpm \
+        irods-icommands-4.2.3-1.x86_64.rpm \
+        irods-resource-plugin-globus-2.0.0-1.x86_64.rpm \
+        irods-rule-engine-plugin-python-4.2.3-centos7-x86_64.rpm \
+        irods-runtime-4.2.3-1.x86_64.rpm \
+        irods-server-4.2.3-1.x86_64.rpm \
+        fuse fuse-libs irods-fuse-4.2.3-centos7-x86_64.rpm
+
+
+###################################################################################################
+###################################################################################################
+
+
+COPY ./venv /usr/bin/venv
+RUN chmod +x /usr/bin/venv
+
+COPY ./toilvenv /usr/bin/toilvenv
+RUN chmod +x /usr/bin/toilvenv
+
+RUN groupadd datacommons; groupadd docker \
+    && useradd -m dockeruser -g datacommons -G docker -s /bin/bash \
+    && echo "dockeruser ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/datacommons
+
+USER dockeruser
+WORKDIR /home/dockeruser
+
+
+RUN touch /home/dockeruser/.profile \
+    && if [ ! -d ~/.irods ]; then mkdir ~/.irods; fi \
+    # set global httpd ServerName to localhost
+    && sudo sed -i 's|.*ServerName.*|ServerName localhost|g' /etc/httpd/conf/httpd.conf \
+    # set user/group for davfs
+    && sudo sed -i 's|^# dav_user.*|dav_user davfs2|g' /etc/davfs2/davfs2.conf \
+    && sudo sed -i 's|^# dav_group.*|dav_group davfs2|g' /etc/davfs2/davfs2.conf \
+    && sudo sed -i 's|^# dir_refresh.*|dir_refresh 3|g' /etc/davfs2/davfs2.conf \
+    && sudo sed -i 's|^# file_refresh.*|file_refresh 1|g' /etc/davfs2/davfs2.conf \
+    && sudo sed -i 's|^# delay_upload.*|delay_upload 0|g' /etc/davfs2/davfs2.conf
+ENV IRODS_MOUNT="/renci/irods"
+RUN if [ ! -d ${IRODS_MOUNT} ]; then \
+        sudo mkdir -p ${IRODS_MOUNT}; \
+        sudo chown "${user}:${group}" $IRODS_MOUNT; \
+    fi; \
+    if grep IRODS_MOUNT ~/.profile; then \
+        sed -i "s|^export IRODS_MOUNT=.*$|export IRODS_MOUNT=${IRODS_MOUNT}|g" ~/.profile; \
+    else \
+        echo "export IRODS_MOUNT=${IRODS_MOUNT}" >> ~/.profile; \
+    fi; \
+    # set up python 3 virtualenv
+    export VENV=~/venv \
+    && python3.6 -m venv $VENV \
+    && cd $VENV \
+    #&&source bin/activate \
+    #& pip install stars \
+    # install cwltool fork 
+    #&& git clone https://github.com/stevencox/cwltool.git \
+    #&& cd cwltool && pip install .; cd $VENV \
+    && export TOIL_INSTALL=/opt/toil \
+    && echo "export TOIL_INSTALL=${TOIL_INSTALL}" >> ~/.profile \
+    && cd /opt \
+    && sudo git clone https://github.com/theferrit32/toil \
+    && sudo chown -R dockeruser:datacommons toil \
+    && cd toil \
+    && git checkout rebase-2018-06-29 \
+    #ff-2018-06-25 \
+    && sudo yum install -y python-pip python-devel \
+    && sudo pip2.7 install virtualenv \
+    && python2.7 -m virtualenv venv2.7 \
+    && source venv2.7/bin/activate \
+    && pip2.7 install pip==8.1.2 \
+    && pip2.7 install chronos-python \
+    && sudo git clone https://github.com/stevencox/cwltool.git /opt/cwltool \
+    && sudo chown -R dockeruser:datacommons /opt/cwltool \
+    && cd /opt/cwltool \
+    && git checkout open_permissions \
+    && pip2.7 install -e . \
+    && cd /opt/toil \
+    && pip2.7 install -e .[cwl,mesos,aws] \
+    && sudo ln -s $(pwd)/_toil_worker.sh /usr/bin/_toil_worker \
+    #&& bash ./install.sh \
+    && echo 10
+
+# TODO used for updating code without long rebuild
+RUN cd /opt/toil/ && source venv2.7/bin/activate \
+    && git pull && pip install -e . \
+    && echo 0
+
+RUN sudo yum install -y openssh-server \
+    && sudo yum clean all \
+    && sudo ssh-keygen -A \
+    && mkdir -p ~/.ssh \
+    && touch ~/.ssh/authorized_keys \
+    && chmod 700 ~/.ssh
+
+COPY ./base_postinstall.sh ./dc_toil_setup.sh ./base-start.sh /home/dockeruser/
+RUN sudo chmod +x /home/dockeruser/base_postinstall.sh \
+    && sudo chmod +x /home/dockeruser/dc_toil_setup.sh \
+    && sudo chmod +x /home/dockeruser/base-start.sh
+
+COPY ./entrypoint.sh ./run-cwl.sh /home/dockeruser/
+RUN sudo chmod +x /home/dockeruser/entrypoint.sh \
+    && sudo chmod +x /home/dockeruser/run-cwl.sh
+EXPOSE 80
+
+COPY ./davrods-vhost.conf /etc/httpd/conf.d/
+ENTRYPOINT ["bash", "-i", "/home/dockeruser/base-start.sh"]
+CMD ["venv"]

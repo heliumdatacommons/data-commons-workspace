@@ -1,37 +1,103 @@
-FROM centos:centos7
+FROM ubuntu:16.04
+# we use bash here
+RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
-# add irods repo
-RUN rpm --import https://packages.irods.org/irods-signing-key.asc \
-        && curl https://packages.irods.org/renci-irods.yum.repo | tee /etc/yum.repos.d/renci-irods.yum.repo \
-    # IUS let their TLS cert expire on May 8, 2018, 7:59 PM
-    && curl -O --insecure --location https://centos7.iuscommunity.org/ius-release.rpm \
-    && yum install -y epel-release ius-release.rpm \
-    && yum update -y \
-    && yum install -y \
-        sudo python36u python36u-devel davfs2 git gcc nodejs docker iptables vim \
-    && yum clean all
+# install base packages
+ENV DEBIAN_FRONTEND="noninteractive"
+RUN apt-get update && apt-get install -y dialog man apt-transport-https apt-utils \
+    && apt-get install -y wget curl vim gnupg lsb-release \
+    && wget -qO - https://packages.irods.org/irods-signing-key.asc | apt-key add - \
+    && echo "deb [arch=amd64] https://packages.irods.org/apt/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/renci-irods.list \
+    && apt-get update \
+    && apt-get install -y --force-yes sudo iptables nodejs git python-pip python3-pip gcc docker.io ninja-build davfs2
 
 
 ###################################################################################################
 ###################################################################################################
 # build patched irods
-#RUN yum install -y which make pam-devel unixODBC unixODBC-devel vim \
-#    && yum clean all
 
+# irods build dependencies
+# use pre-built packages, but still install the prereqs, for later builds
+ENV IRODS_EXTERNALS="/opt/irods-externals"
+RUN git clone https://github.com/irods/externals ${IRODS_EXTERNALS}-src \
+    && cd ${IRODS_EXTERNALS}-src \
+    && apt-get install -y \
+        irods-externals-zeromq4-14.1.6-0 \
+        irods-externals-libarchive3.3.2-1 \
+        irods-externals-jansson2.7-0 \
+        irods-externals-cppzmq4.2.3-0 \
+        irods-externals-clang-runtime3.8-0 \
+        irods-externals-clang3.8-0 \
+        irods-externals-cmake3.11.4-0 \
+        irods-externals-avro1.8.2-0 \
+        irods-externals-boost1.67.0-0 \
+    && ./install_prerequisites.py \
+    # these don't seem to be on the dep tree for irods-dev
+    && apt install -y libkrb5-dev libzmqpp-dev 
 
-RUN git clone https://github.com/heliumdatacommons/irods-packages.git /opt/irods-packages \
-    && cd /opt/irods-packages \
-    && yum install -y davrods-4.2.3_1.4.0-1.rpm \
-        irods-auth-plugin-openid-2.2.0-1.x86_64.rpm \
-        irods-database-plugin-postgres-4.2.3-1.x86_64.rpm \
-        irods-devel-4.2.3-1.x86_64.rpm \
-        irods-icommands-4.2.3-1.x86_64.rpm \
-        irods-resource-plugin-globus-2.0.0-1.x86_64.rpm \
-        irods-rule-engine-plugin-python-4.2.3-centos7-x86_64.rpm \
-        irods-runtime-4.2.3-1.x86_64.rpm \
-        irods-server-4.2.3-1.x86_64.rpm \
-        fuse fuse-libs irods-fuse-4.2.3-centos7-x86_64.rpm
+ENV PATH="${IRODS_EXTERNALS}/cmake3.11.4-0/bin:${PATH}"
+# build irods from fork
+# TODO when 4.2.3 is released, update to that version
+#ENV IRODS="/opt/irods"
+#RUN git clone https://github.com/theferrit32/irods ${IRODS} \
+#    && cd ${IRODS} \
+#    && git submodule update --init \
+#    && git checkout 4-2-3-dev \
+#    && mkdir build \
+#    && cd build \
+#    && cmake -DIRODS_EXTERNALS_PACKAGE_ROOT=${IRODS_EXTERNALS} .. \
+#    && make -j6 package \
+#    && apt-get install -y ./irods-devel-4.2.3* ./irods-runtime-4.2.3* \
+#    && echo 0
+RUN apt install -y irods-dev irods-runtime
 
+# build irods icommands
+ENV IRODS_CLIENT_ICOMMANDS="/opt/irods_client_icommands"
+RUN git clone https://github.com/heliumdatacommons/irods_client_icommands ${IRODS_CLIENT_ICOMMANDS} \
+    && cd ${IRODS_CLIENT_ICOMMANDS} \
+    && git checkout 4-2-stable \
+    && mkdir build \
+    && cd build \
+    && cmake -G Ninja .. \
+    && ninja package \
+    && apt-get install -y ./irods-icommands_4.2.3* \
+    && echo 0
+
+# install irods oidc auth plugin
+ENV IRODS_OIDC="/opt/irods_auth_plugin_openid"
+RUN git clone https://github.com/irods-contrib/irods_auth_plugin_openid ${IRODS_OIDC} \
+    && cd ${IRODS_OIDC} \
+    && mkdir build \
+    && cd build \
+    && cmake -G Ninja .. \
+    && ninja package \
+    && apt-get install -y ./irods-auth-plugin-openid* \
+    && echo 0
+
+# install davrods from source
+ENV IRODS_DAVRODS="/opt/davrods"
+RUN apt-get install -y apache2 apache2-dev \
+    && git clone https://github.com/theferrit32/davrods.git ${IRODS_DAVRODS} \
+    && cd ${IRODS_DAVRODS} \
+    && sed -i 's|IRODSRT_VERSION "4.2.2"|IRODSRT_VERSION "4.2.3"|g' CMakeLists.txt \
+    && mkdir build \
+    && cd build \
+    # davrods doesn't build with ninja
+    && cmake .. \
+    && make -j2 package \
+    && apt-get install -y ./davrods-4.2.3*
+
+# TODO remove if unneeded
+# install irods fuse from source
+ENV IRODS_FUSE="/opt/irods_client_fuse"
+RUN apt-get install -y fuse libfuse-dev \
+    && git clone https://github.com/irods/irods_client_fuse ${IRODS_FUSE} \
+    && cd ${IRODS_FUSE} \
+    && mkdir build \
+    && cd build \
+    && cmake -G Ninja .. \
+    && ninja package \
+    && apt-get install -y ./irods-fuse-4.2.3*
 
 ###################################################################################################
 ###################################################################################################
@@ -43,7 +109,7 @@ RUN chmod +x /usr/bin/venv
 COPY ./toilvenv /usr/bin/toilvenv
 RUN chmod +x /usr/bin/toilvenv
 
-RUN groupadd datacommons; groupadd docker \
+RUN groupadd datacommons \
     && useradd -m dockeruser -g datacommons -G docker -s /bin/bash \
     && echo "dockeruser ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/datacommons
 
@@ -54,7 +120,7 @@ WORKDIR /home/dockeruser
 RUN touch /home/dockeruser/.profile \
     && if [ ! -d ~/.irods ]; then mkdir ~/.irods; fi \
     # set global httpd ServerName to localhost
-    && sudo sed -i 's|.*ServerName.*|ServerName localhost|g' /etc/httpd/conf/httpd.conf \
+    && echo "ServerName localhost" | sudo tee -a /etc/apache2/apache2.conf \
     # set user/group for davfs
     && sudo sed -i 's|^# dav_user.*|dav_user davfs2|g' /etc/davfs2/davfs2.conf \
     && sudo sed -i 's|^# dav_group.*|dav_group davfs2|g' /etc/davfs2/davfs2.conf \
@@ -72,46 +138,39 @@ RUN if [ ! -d ${IRODS_MOUNT} ]; then \
         echo "export IRODS_MOUNT=${IRODS_MOUNT}" >> ~/.profile; \
     fi; \
     # set up python 3 virtualenv
-    export VENV=~/venv \
-    && python3.6 -m venv $VENV \
-    && cd $VENV \
-    #&&source bin/activate \
-    #& pip install stars \
-    # install cwltool fork 
-    #&& git clone https://github.com/stevencox/cwltool.git \
-    #&& cd cwltool && pip install .; cd $VENV \
-     export TOIL_INSTALL=/opt/toil \
-    && echo "export TOIL_INSTALL=${TOIL_INSTALL}" >> ~/.profile \
+    pip3 install --user virtualenv \
+    && python3.5 -m virtualenv ~/venv \
+    && export TOIL_INSTALL=/opt/toil \
+    && echo "export TOIL_INSTALL=/opt/toil" >> ~/.profile \
     && cd /opt \
     && sudo git clone https://github.com/theferrit32/toil \
     && sudo chown -R dockeruser:datacommons toil \
     && cd toil \
     && git checkout rebase-2018-06-29 \
-    #ff-2018-06-25 \
-    && sudo yum install -y python-pip python-devel \
-    && sudo pip2.7 install virtualenv \
-    && virtualenv -p python2.7 venv2.7 \
-    && source venv2.7/bin/activate \
-    && pip2.7 install pip==8.1.2 \
-    && pip2.7 install chronos-python \
+    && pip2 install virtualenv \
+    && python2.7 -m virtualenv venv2.7
+RUN echo "ACTIVATING VENV2.7" \
+    && cd /opt/toil && source venv2.7/bin/activate \
+    && pip2 install pip==8.1.2 \
+    && pip2 install chronos-python \
     && sudo git clone https://github.com/stevencox/cwltool.git /opt/cwltool \
     && sudo chown -R dockeruser:datacommons /opt/cwltool \
     && cd /opt/cwltool \
     && git checkout open_permissions \
-    && pip2.7 install -e . \
+    && pip2 install -e . \
     && cd /opt/toil \
-    && pip2.7 install -e .[cwl,mesos,aws] \
+    && pip2 install -e .[cwl,mesos,aws] \
     && sudo ln -s $(pwd)/_toil_worker.sh /usr/bin/_toil_worker \
     #&& bash ./install.sh \
-    && echo 10
+    && echo 0
 
 # TODO used for updating code without long rebuild
 RUN cd /opt/toil/ && source venv2.7/bin/activate \
     && git pull && pip install -e . \
     && echo 0
 
-RUN sudo yum install -y openssh-server \
-    && sudo yum clean all \
+RUN sudo apt-get install -y openssh-server \
+    && sudo apt-get clean \
     && sudo ssh-keygen -A \
     && mkdir -p ~/.ssh \
     && touch ~/.ssh/authorized_keys \
@@ -127,6 +186,6 @@ RUN sudo chmod +x /home/dockeruser/entrypoint.sh \
     && sudo chmod +x /home/dockeruser/run-cwl.sh
 EXPOSE 80
 
-COPY ./davrods-vhost.conf /etc/httpd/conf.d/
+COPY ./davrods-vhost.conf /etc/apache2/sites-available/
 ENTRYPOINT ["bash", "-i", "/home/dockeruser/base-start.sh"]
 CMD ["venv"]

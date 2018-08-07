@@ -7,7 +7,7 @@ set -e
 if [ ! -d ~/.irods ]; then mkdir ~/.irods; fi
 
 # set global httpd ServerName to localhost
-sudo sed -i 's|.*ServerName.*|ServerName localhost|g' /etc/httpd/conf/httpd.conf
+sudo sed -i 's|.*ServerName.*|ServerName localhost|g' /etc/apache2/apache2.conf
 
 # set user/group for davfs
 sudo sed -i 's|^# dav_user.*|dav_user davfs2|g' /etc/davfs2/davfs2.conf

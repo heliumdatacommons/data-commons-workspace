@@ -9,15 +9,20 @@ bash /home/dockeruser/entrypoint.sh
 #fi
 
 # For logs
-timestamp=$(date +%H:%m:%ST%Y-%M-%d%z)
+log_suffix=$(date +%Y-%m-%dT%H:%M:%S%Z)
+if [ ! -z "$WORKFLOW_NAME" ]; then
+    log_suffix="${WORKFLOW_NAME}.${log_suffix}"
+fi
 DAVRODS_CWD="/${IRODS_ZONE_NAME}"
 logdir="${IRODS_MOUNT}${IRODS_HOME#$DAVRODS_CWD}/.log" # irods home path minus the cwd, if they overlap, appended to the irods mountpoint
 echo "logdir: $logdir"
-mkdir -p $logdir
-toilworkerlog=${logdir}/toil_worker_${timestamp}
-toilexeclog=${logdir}/toil_exec_${timestamp}
-cwlworkerlog=${logdir}/cwl_worker_${timestamp}
-cwlexeclog=${logdir}/cwl_exec_${timestamp}
+if [ ! -d $logdir ]; then
+    mkdir -p $logdir
+fi
+toilworkerlog=${logdir}/toil_worker_${log_suffix}
+toilexeclog=${logdir}/toil_exec_${log_suffix}
+cwlworkerlog=${logdir}/cwl_worker_${log_suffix}
+cwlexeclog=${logdir}/cwl_exec_${log_suffix}
 
 echo "base-start: [$@]"
 env #TODO remove
@@ -27,11 +32,13 @@ if [ ! -z "$SSH_PUBKEY" ]; then
 fi
 
 # start dockerd
-sudo /usr/bin/dockerd-current \
-    --add-runtime docker-runc=/usr/libexec/docker/docker-runc-current \
-    --default-runtime=docker-runc > /tmp/dockerd.log 2>&1 &
+#sudo /usr/bin/dockerd-current \
+#    --add-runtime docker-runc=/usr/libexec/docker/docker-runc-current \
+#    --default-runtime=docker-runc > /tmp/dockerd.log 2>&1 &
+sudo /usr/bin/dockerd 2>&1 &
 
 # Determine which virtual env to start at run time
+sudo mkdir -p /var/run/sshd
 if [ "$1" == "sshd" ]; then
     sudo /usr/sbin/sshd -D
 else
@@ -41,7 +48,13 @@ else
         cd ~/venv && source bin/activate
         bash -i
     elif [ "$1" == "toilvenv" ]; then
-        toilvenv
+        cd /opt/toil && source venv2.7/bin/activate
+        if [[ -z "$2" ]]; then
+            bash -i
+        else
+            bash -c "$@"
+        fi
+        #toilvenv
     elif [ "$1" == "_toil_worker" ]; then
         echo "running _toil_worker [${@:2}]"
         cd /opt/toil/ && source venv2.7/bin/activate
@@ -65,8 +78,8 @@ else
     fi
 fi
 echo "calling sync"
-sync
-sudo umount.davfs ${IRODS_MOUNT}
+#sync
+sudo umount -f ${IRODS_MOUNT}
 echo "finished sync"
 #fusermount -u ${IRODS_MOUNT}
 #bash -i
