@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y dialog man apt-transport-https apt-util
     && wget -qO - https://packages.irods.org/irods-signing-key.asc | apt-key add - \
     && echo "deb [arch=amd64] https://packages.irods.org/apt/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/renci-irods.list \
     && apt-get update \
-    && apt-get install -y --force-yes sudo iptables nodejs git python-pip python3-pip gcc docker.io ninja-build davfs2
+    && apt-get install -y --force-yes sudo iptables nodejs git python-pip python3-pip gcc docker.io ninja-build davfs2 screen dnsutils htop bmon
 
 
 ###################################################################################################
@@ -74,19 +74,6 @@ RUN git clone https://github.com/irods-contrib/irods_auth_plugin_openid ${IRODS_
     && apt-get install -y ./irods-auth-plugin-openid* \
     && echo 0
 
-# install davrods from source
-ENV IRODS_DAVRODS="/opt/davrods"
-RUN apt-get install -y apache2 apache2-dev \
-    && git clone https://github.com/theferrit32/davrods.git ${IRODS_DAVRODS} \
-    && cd ${IRODS_DAVRODS} \
-    && sed -i 's|IRODSRT_VERSION "4.2.2"|IRODSRT_VERSION "4.2.3"|g' CMakeLists.txt \
-    && mkdir build \
-    && cd build \
-    # davrods doesn't build with ninja
-    && cmake .. \
-    && make -j2 package \
-    && apt-get install -y ./davrods-4.2.3*
-
 # TODO remove if unneeded
 # install irods fuse from source
 ENV IRODS_FUSE="/opt/irods_client_fuse"
@@ -98,6 +85,20 @@ RUN apt-get install -y fuse libfuse-dev \
     && cmake -G Ninja .. \
     && ninja package \
     && apt-get install -y ./irods-fuse-4.2.3*
+
+# install davrods from source
+ENV IRODS_DAVRODS="/opt/davrods"
+RUN apt-get install -y apache2 apache2-dev
+RUN git clone https://github.com/theferrit32/davrods.git ${IRODS_DAVRODS} \
+    && cd ${IRODS_DAVRODS} \
+    && git checkout dev \
+    #&& sed -i 's|IRODSRT_VERSION "4.2.2"|IRODSRT_VERSION "4.2.3"|g' CMakeLists.txt \
+    && mkdir build \
+    && cd build \
+    # davrods doesn't build with ninja
+    && cmake .. \
+    && make -j2 package \
+    && apt-get install -y ./davrods-4.2.3*
 
 ###################################################################################################
 ###################################################################################################
@@ -160,13 +161,12 @@ RUN echo "ACTIVATING VENV2.7" \
     && pip2 install -e . \
     && cd /opt/toil \
     && pip2 install -e .[cwl,mesos,aws] \
-    && sudo ln -s $(pwd)/_toil_worker.sh /usr/bin/_toil_worker \
-    #&& bash ./install.sh \
+    && sudo ln -s /opt/toil/_toil_worker.sh /usr/bin/_toil_worker \
     && echo 0
 
 # TODO used for updating code without long rebuild
 RUN cd /opt/toil/ && source venv2.7/bin/activate \
-    && git pull && pip install -e . \
+    && git pull && pip install -e .[cwl,mesos,aws] \
     && echo 0
 
 RUN sudo apt-get install -y openssh-server \
@@ -175,6 +175,13 @@ RUN sudo apt-get install -y openssh-server \
     && mkdir -p ~/.ssh \
     && touch ~/.ssh/authorized_keys \
     && chmod 700 ~/.ssh
+
+# TODO remove
+RUN cd /opt/davrods \
+    && sudo git pull \
+    && cd build \
+    && sudo make package \
+    && sudo dpkg -i ./davrods-4.2.3*
 
 COPY ./base_postinstall.sh ./dc_toil_setup.sh ./base-start.sh /home/dockeruser/
 RUN sudo chmod +x /home/dockeruser/base_postinstall.sh \
@@ -187,5 +194,5 @@ RUN sudo chmod +x /home/dockeruser/entrypoint.sh \
 EXPOSE 80
 
 COPY ./davrods-vhost.conf /etc/apache2/sites-available/
-ENTRYPOINT ["bash", "-i", "/home/dockeruser/base-start.sh"]
+ENTRYPOINT ["bash", "/home/dockeruser/base-start.sh"]
 CMD ["venv"]
