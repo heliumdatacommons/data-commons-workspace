@@ -25,7 +25,6 @@ cwlworkerlog=${logdir}/cwl_worker_${log_suffix}
 cwlexeclog=${logdir}/cwl_exec_${log_suffix}
 
 echo "base-start: [$@]"
-env #TODO remove
 
 if [ ! -z "$SSH_PUBKEY" ]; then
     echo "${SSH_PUBKEY}" >> ~/.ssh/authorized_keys
@@ -35,9 +34,12 @@ fi
 #sudo /usr/bin/dockerd-current \
 #    --add-runtime docker-runc=/usr/libexec/docker/docker-runc-current \
 #    --default-runtime=docker-runc > /tmp/dockerd.log 2>&1 &
-sudo /usr/bin/dockerd 2>&1 &
+
+#TODO look into the warnings from this, but they do not currently impact docker
+sudo /usr/bin/dockerd > /tmp/dockerd.log 2>&1 &
 
 # Determine which virtual env to start at run time
+exitcode=0
 sudo mkdir -p /var/run/sshd
 if [ "$1" == "sshd" ]; then
     sudo /usr/sbin/sshd -D
@@ -52,7 +54,10 @@ else
         if [[ -z "$2" ]]; then
             bash -i
         else
-            bash -c "$@"
+            # automated command inside the toil env
+            echo "running toilvenv automated '${@:2}'"
+            bash -c "${@:2}"
+            exitcode=$?
         fi
         #toilvenv
     elif [ "$1" == "_toil_worker" ]; then
@@ -60,6 +65,7 @@ else
         cd /opt/toil/ && source venv2.7/bin/activate
         touch $toilworkerlog
         _toil_worker ${@:2} 2>&1 | tee $toilworkerlog
+        exitcode=${PIPESTATUS[0]}
         #/usr/bin/_toil_worker "${@:2}"
     elif [ "$1" == "_cwl_worker" ]; then
         echo "running _cwl_worker [${@:2}]"
@@ -67,14 +73,17 @@ else
         cd ~/venv && source bin/activate
         touch $cwlworkerlog
         bash -c "${@:2}" 2>&1 | tee $cwlworkerlog
+        exitcode=${PIPESTATUS[0]}
     elif [ "$1" == "_toil_exec" ]; then
         echo "running _toil_exec"
         touch $toilexeclog
         toilvenv "${@:2}" 2>&1 | tee $toilexeclog
+        exitcode=${PIPESTATUS[0]}
     elif [ "$1" == "_cwl_exec" ]; then
         echo "running _cwl_exec"
         touch $cwlexeclog
         venv "${@:2}" 2>&1 | tee $cwlexeclog
+        exitcode=${PIPESTATUS[0]}
     fi
 fi
 echo "calling sync"
@@ -82,4 +91,5 @@ echo "calling sync"
 sudo umount -f ${IRODS_MOUNT}
 echo "finished sync"
 #fusermount -u ${IRODS_MOUNT}
-#bash -i
+
+exit ${exitcode}
