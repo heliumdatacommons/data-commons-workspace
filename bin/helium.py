@@ -126,7 +126,6 @@ def run(options):
             run_args.append('venv')
     else:
         raise RuntimeError('Unknown image: {}'.format(options.image))
-    print(run_args)
     print('COMMAND STRING: \n{}'.format(' '.join(run_args)))
     proc = subprocess.Popen(run_args, universal_newlines=True)
     #for line in proc.stdout:
