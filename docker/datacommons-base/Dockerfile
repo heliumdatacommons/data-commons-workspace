@@ -56,6 +56,7 @@ ENV IRODS_CLIENT_ICOMMANDS="/opt/irods_client_icommands"
 RUN git clone https://github.com/heliumdatacommons/irods_client_icommands ${IRODS_CLIENT_ICOMMANDS} \
     && cd ${IRODS_CLIENT_ICOMMANDS} \
     && git checkout 4-2-stable \
+    && sed -i "s|IRODS 4.2.4|IRODS 4.2.3|g" CMakeLists.txt \
     && mkdir build \
     && cd build \
     && cmake -G Ninja .. \
@@ -91,7 +92,7 @@ ENV IRODS_DAVRODS="/opt/davrods"
 RUN apt-get install -y apache2 apache2-dev
 RUN git clone https://github.com/theferrit32/davrods.git ${IRODS_DAVRODS} \
     && cd ${IRODS_DAVRODS} \
-    && git checkout dev \
+    #&& git checkout dev \
     #&& sed -i 's|IRODSRT_VERSION "4.2.2"|IRODSRT_VERSION "4.2.3"|g' CMakeLists.txt \
     && mkdir build \
     && cd build \

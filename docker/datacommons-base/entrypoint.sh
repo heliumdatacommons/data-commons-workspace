@@ -2,7 +2,7 @@
 
 cd ~/
 . ~/.profile
-echo "ENTRYPOINT\n\n"
+printf "ENTRYPOINT\n\n"
 env
 
 # make env vars persistent
@@ -86,18 +86,26 @@ fi
 if [ ! -f ~/.irods/.irodsA ]; then
     # irods not initialized
     echo "iRODS not initialized"
-    if [ ! -z "$IRODS_ACCESS_TOKEN" ] \
-         && [ ! -z "${IRODS_AUTHENTICATION_SCHEME}" ] \
-         && [ "${IRODS_AUTHENTICATION_SCHEME}" = "openid" ]; then
-        echo "Authenticating to iRODS using provided access token"
-        echo "act:${IRODS_ACCESS_TOKEN}" > ~/.irods/.irodsA
-
-        # webdav credentials
+    if [ ! -z "${IRODS_AUTHENTICATION_SCHEME}" ] \
+         && [ "${IRODS_AUTHENTICATION_SCHEME}" = "openid" ] \
+         && ( [ ! -z "${IRODS_ACCESS_TOKEN}" ] || [ ! -z "${IRODS_USER_KEY}" ] ); then
+        # davrods openid scheme
         sudo sed -i "s|DavRodsAuthScheme Native|DavRodsAuthScheme OpenID|g" /etc/apache2/sites-available/davrods-vhost.conf
-        echo "http://localhost:80 ${IRODS_USER_NAME} access_token=${IRODS_ACCESS_TOKEN}" | sudo tee -a /etc/davfs2/secrets >> /dev/null
 
-        # test initial icommands conn
-        iinit "${IRODS_ACCESS_TOKEN}"
+        if [ ! -z "${IRODS_USER_KEY}" ]; then
+            echo "Authenticating to iRODS using provided user key"
+            echo "ukey=${IRODS_USER_KEY}" > ~/.irods/.irodsA
+            echo "http://localhost:80 ${IRODS_USER_NAME} user_key=${IRODS_USER_KEY}" | sudo tee -a /etc/davfs2/secrets >> /dev/null
+            # non-interactive iinit not currently implemented for user key
+        elif [ ! -z "${IRODS_ACCESS_TOKEN}" ]; then
+            echo "Authenticating to iRODS using provided access token"
+            echo "act=${IRODS_ACCESS_TOKEN}" > ~/.irods/.irodsA
+            echo "http://localhost:80 ${IRODS_USER_NAME} access_token=${IRODS_ACCESS_TOKEN}" | sudo tee -a /etc/davfs2/secrets >> /dev/null
+            # test initial icommands conn, disable until also implemented for user key
+            iinit "${IRODS_ACCESS_TOKEN}"
+        else
+            echo "entered unknown branch"
+        fi
     elif [ ! -z "$IRODS_PASSWORD" ]; then
         echo "Authenticating to iRODS using provided password"
         echo "http://localhost:80 ${IRODS_USER_NAME} ${IRODS_PASSWORD}" | sudo tee -a /etc/davfs2/secrets >> /dev/null

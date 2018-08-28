@@ -46,6 +46,7 @@ def main(argv):
         creds_group = parser.add_mutually_exclusive_group(required=True)
         creds_group.add_argument('-P', '--password', type=str, default=None, help='Password to authenticate with.')
         creds_group.add_argument('-T', '--access-token', type=str, default=None, help='Access token to authenticate with.')
+        creds_group.add_argument('-K', '--user-key', type=str, default=None, help='User key to authenticate with.')
     
         parser.add_argument('--irods-host', type=str, default=IRODS_HOST, help='iRODS host to connect to.')
         parser.add_argument('--irods-port', type=str, default=IRODS_PORT, help='iRODS port to connect to.')
@@ -103,6 +104,10 @@ def run(options):
     if options.access_token:
         env['IRODS_AUTHENTICATION_SCHEME'] = 'openid'
         env['IRODS_ACCESS_TOKEN'] = options.access_token
+        if 'IRODS_PASSWORD' in env: del(env['IRODS_PASSWORD'])
+    if options.user_key:
+        env['IRODS_AUTHENTICATION_SCHEME'] = 'openid'
+        env['IRODS_USER_KEY'] = options.user_key
         if 'IRODS_PASSWORD' in env: del(env['IRODS_PASSWORD'])
     # turns a dictionary of env var to val into a list of [ '-e', 'k=v', '-e', 'k2=v2', ... ]
     env_args = [val for tuple in zip(['-e' for k in env], ["{}={}".format(k,v) for k,v in env.items() if env[k]]) for val in tuple]
