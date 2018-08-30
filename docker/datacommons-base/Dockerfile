@@ -155,6 +155,8 @@ RUN echo "ACTIVATING VENV2.7" \
     && cd /opt/toil && source venv2.7/bin/activate \
     && pip2 install pip==8.1.2 \
     && pip2 install chronos-python \
+    # fix @ symbol bug
+    && pip2 install git+https://github.com/heliumdatacommons/schema_salad.git \
     && sudo git clone https://github.com/stevencox/cwltool.git /opt/cwltool \
     && sudo chown -R dockeruser:datacommons /opt/cwltool \
     && cd /opt/cwltool \
