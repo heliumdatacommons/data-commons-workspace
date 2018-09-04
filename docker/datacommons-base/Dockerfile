@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y dialog man apt-transport-https apt-util
     && curl -q https://packages.irods.org/irods-signing-key.asc | apt-key add - \
     && echo "deb [arch=amd64] https://packages.irods.org/apt/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/renci-irods.list \
     && apt-get update \
-    && apt-get install -y --force-yes sudo iptables nodejs git python-pip python3-pip gcc docker.io ninja-build davfs2 screen dnsutils htop bmon
+    && apt-get install -y --force-yes sudo iptables nodejs git python-pip python3-pip gcc docker.io ninja-build davfs2 nfs-common screen dnsutils htop bmon
 
 
 ###################################################################################################
@@ -56,18 +56,19 @@ ENV IRODS_CLIENT_ICOMMANDS="/opt/irods_client_icommands"
 RUN git clone https://github.com/heliumdatacommons/irods_client_icommands ${IRODS_CLIENT_ICOMMANDS} \
     && cd ${IRODS_CLIENT_ICOMMANDS} \
     && git checkout 4-2-stable \
-    && sed -i "s|IRODS 4.2.4|IRODS 4.2.3|g" CMakeLists.txt \
+    #&& sed -i "s|IRODS 4.2.4|IRODS 4.2.3|g" CMakeLists.txt \
     && mkdir build \
     && cd build \
     && cmake -G Ninja .. \
     && ninja package \
-    && apt-get install -y ./irods-icommands_4.2.3* \
+    && apt-get install -y ./irods-icommands* \
     && echo 0
 
 # install irods oidc auth plugin
 ENV IRODS_OIDC="/opt/irods_auth_plugin_openid"
 RUN git clone https://github.com/irods-contrib/irods_auth_plugin_openid ${IRODS_OIDC} \
     && cd ${IRODS_OIDC} \
+    && sed -i "s|IRODS 4.2.3|IRODS 4.2.4|g" CMakeLists.txt \
     && mkdir build \
     && cd build \
     && cmake -G Ninja .. \
@@ -85,7 +86,7 @@ RUN apt-get install -y fuse libfuse-dev \
     && cd build \
     && cmake -G Ninja .. \
     && ninja package \
-    && apt-get install -y ./irods-fuse-4.2.3*
+    && apt-get install -y ./irods-fuse-*
 
 # install davrods from source
 ENV IRODS_DAVRODS="/opt/davrods"
@@ -93,13 +94,13 @@ RUN apt-get install -y apache2 apache2-dev
 RUN git clone https://github.com/theferrit32/davrods.git ${IRODS_DAVRODS} \
     && cd ${IRODS_DAVRODS} \
     #&& git checkout dev \
-    #&& sed -i 's|IRODSRT_VERSION "4.2.2"|IRODSRT_VERSION "4.2.3"|g' CMakeLists.txt \
+    && sed -i 's|IRODSRT_VERSION "4.2.3"|IRODSRT_VERSION "4.2.4"|g' CMakeLists.txt \
     && mkdir build \
     && cd build \
     # davrods doesn't build with ninja
     && cmake .. \
     && make -j2 package \
-    && apt-get install -y ./davrods-4.2.3*
+    && apt-get install -y ./davrods-*
 
 ###################################################################################################
 ###################################################################################################
@@ -145,10 +146,10 @@ RUN if [ ! -d ${IRODS_MOUNT} ]; then \
     && export TOIL_INSTALL=/opt/toil \
     && echo "export TOIL_INSTALL=/opt/toil" >> ~/.profile \
     && cd /opt \
-    && sudo git clone https://github.com/theferrit32/toil \
+    && sudo git clone https://github.com/heliumdatacommons/toil \
     && sudo chown -R dockeruser:datacommons toil \
     && cd toil \
-    && git checkout rebase-2018-06-29 \
+    #&& git checkout rebase-2018-06-29 \
     && pip2 install virtualenv \
     && python2.7 -m virtualenv venv2.7 \
     && echo 0
@@ -185,7 +186,7 @@ RUN cd /opt/davrods \
     && sudo git pull \
     && cd build \
     && sudo make package \
-    && sudo dpkg -i ./davrods-4.2.3*
+    && sudo dpkg -i ./davrods-*
 
 COPY ./base_postinstall.sh ./dc_toil_setup.sh ./base-start.sh /home/dockeruser/
 RUN sudo chmod +x /home/dockeruser/base_postinstall.sh \

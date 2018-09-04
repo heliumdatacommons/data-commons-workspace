@@ -144,6 +144,7 @@ if [ $x -eq $wait_limit ]; then
 fi
 
 # now that apache with davrods module is up, mount it to fs
+echo "Mounting iRODS"
 sudo mount -t davfs -o uid=dockeruser,gid=datacommons "http://localhost:80" ${IRODS_MOUNT}
 
 # mount irods fuse
@@ -153,6 +154,11 @@ sudo mount -t davfs -o uid=dockeruser,gid=datacommons "http://localhost:80" ${IR
 #irodsFs -onocache -oallow_other /renci/irods
 
 # if an NFS server is specified for working/intermediate data, mount it now
-if [ ! -z "TOIL_NFS_WORKDIR_SERVER" ] && [ ! -z "TOIL_NFS_WORKDIR_MOUNT" ]; then
+if [ ! -z "${TOIL_NFS_WORKDIR_SERVER}" ] && [ ! -z "${TOIL_NFS_WORKDIR_MOUNT}" ]; then
+    echo "Mounting NFS server to ${TOIL_NFS_MOUNT} for intermediate data"
+    if [ ! -d "${TOIL_NFS_WORKDIR_MOUNT}" ]; then
+        sudo mkdir -p "${TOIL_NFS_WORKDIR_MOUNT}"
+    fi
+    sudo /etc/init.d/rpcbind start
     sudo mount -t nfs "${TOIL_NFS_SERVER}" "${TOIL_NFS_MOUNT}"
 fi
