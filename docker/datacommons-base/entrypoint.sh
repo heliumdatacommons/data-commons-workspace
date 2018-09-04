@@ -151,3 +151,8 @@ sudo mount -t davfs -o uid=dockeruser,gid=datacommons "http://localhost:80" ${IR
 #sudo sed -i 's/^#.*user_allow_other/user_allow_other/g' /etc/fuse.conf
 # mount
 #irodsFs -onocache -oallow_other /renci/irods
+
+# if an NFS server is specified for working/intermediate data, mount it now
+if [ ! -z "TOIL_NFS_WORKDIR_SERVER" ] && [ ! -z "TOIL_NFS_WORKDIR_MOUNT" ]; then
+    sudo mount -t nfs "${TOIL_NFS_SERVER}" "${TOIL_NFS_MOUNT}"
+fi
