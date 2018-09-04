@@ -1,7 +1,7 @@
 ##NOTE this file is no longer being supported and will be changed or removed
 FROM heliumdatacommons/datacommons-jupyter
 
-RUN sudo yum install -y vim git wget curl gcc gcc-c++ bzip2  bzip2-devel bzip2-libs zlib zlib-devel
+RUN sudo yum install -y vim git curl gcc gcc-c++ bzip2  bzip2-devel bzip2-libs zlib zlib-devel
 
 COPY ./postinstall.sh ./entrypoint.sh  /home/dockeruser/
 

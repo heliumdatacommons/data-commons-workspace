@@ -5,8 +5,8 @@ RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 # install base packages
 ENV DEBIAN_FRONTEND="noninteractive"
 RUN apt-get update && apt-get install -y dialog man apt-transport-https apt-utils \
-    && apt-get install -y wget curl vim gnupg lsb-release \
-    && wget -qO - https://packages.irods.org/irods-signing-key.asc | apt-key add - \
+    && apt-get install -y curl vim gnupg lsb-release \
+    && curl -q https://packages.irods.org/irods-signing-key.asc | apt-key add - \
     && echo "deb [arch=amd64] https://packages.irods.org/apt/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/renci-irods.list \
     && apt-get update \
     && apt-get install -y --force-yes sudo iptables nodejs git python-pip python3-pip gcc docker.io ninja-build davfs2 screen dnsutils htop bmon
@@ -150,7 +150,8 @@ RUN if [ ! -d ${IRODS_MOUNT} ]; then \
     && cd toil \
     && git checkout rebase-2018-06-29 \
     && pip2 install virtualenv \
-    && python2.7 -m virtualenv venv2.7
+    && python2.7 -m virtualenv venv2.7 \
+    && echo 0
 RUN echo "ACTIVATING VENV2.7" \
     && cd /opt/toil && source venv2.7/bin/activate \
     && pip2 install pip==8.1.2 \
