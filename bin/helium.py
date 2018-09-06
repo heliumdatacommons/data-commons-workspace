@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 import sys
 import os
+import time
+import json
 import argparse
 import subprocess
+import requests
+import six
 
 # defaults
 CHRONOS_URL = 'https://stars-app.renci.org/chronos'
@@ -16,14 +20,16 @@ def main(argv):
     parser = argparse.ArgumentParser(description="Helpful launcher script for Helium Data Commons containers")
     
     subparsers = parser.add_subparsers(title='subcommands', dest='subcommand')
-    #subcommand build
+    # subcommand build
     build_parser = subparsers.add_parser('build', help='Build an image')
     build_parser.add_argument('image', type=str, choices=['all','base','jupyter'])
     
-
-    #subcommand run
+    # subcommand run
     run_parser = subparsers.add_parser('run', help='Run an image')
     run_subparsers = run_parser.add_subparsers(title='run-subcommands', dest='image')
+
+    # subcommand login
+    login_parser = subparsers.add_parser('login', help='Authenticate to the Helium stack')
 
     # options specific to the base image
     base_parser = run_subparsers.add_parser('base', help='run the datacommons-base image')
@@ -78,6 +84,8 @@ def main(argv):
             run_parser.print_help()
             exit(1)
         run(options)
+    elif options.subcommand == 'login':
+        login()
     else:
         raise RuntimeError('Unrecognized subcommand')
 
@@ -137,6 +145,44 @@ def run(options):
     #    print(line)
     ret = proc.wait()
     print('run({}) returned status_code: {}'.format(options.image, ret))
+
+
+def login():
+    base_url = 'https://test.commonsshare.org'
+    resp1 = requests.get(base_url + '/authorize?provider=globus&scope=openid%20email%20profile')
+    if resp1.status_code != 200:
+        raise RuntimeError('Failed to acquire login url')
+    else:
+        body = json.loads(resp1.content.decode('utf-8'))
+        if 'authorization_url' not in body or 'nonce' not in body:
+            raise RuntimeError('Improperly formatted response on initialization')
+        print('Please log in with following URL:\n{}\n'.format(body['authorization_url']))
+
+        max_wait = 120
+        interval = 3
+        token_url = base_url + '/token?nonce=' + body['nonce']
+        success = False
+        for i in range(int(max_wait/interval)):
+            resp2 = requests.get(token_url)
+            if resp2.status_code == 200:
+                body = json.loads(resp2.content.decode('utf-8'))
+                if 'access_token' not in body or 'user_name' not in body:
+                    raise RuntimeError('Improperly formatted response on token retrieval')
+                print('Detected login for user: {}'.format(body['user_name']))
+                inp = ''
+                while inp.lower() not in ['y', 'n']:
+                    inp = six.moves.input('Is this the correct identity you wish to use? (y/n) ')
+                if inp == 'n':
+                    print('Please log out of the Helium and Globus in your '
+                        + 'browser and re-run this script to log in with a different account.')
+                    return
+                print('Access Token:')
+                print(body['access_token'])
+                success = True
+                break
+            time.sleep(interval)
+        if not success:
+            print('Failed to login within timeout window of {} seconds' + str(max_wait))
 
 if __name__ == "__main__":
     main(sys.argv[1:])
