@@ -93,8 +93,8 @@ echo "finished sync"
 #fusermount -u ${IRODS_MOUNT}
 
 # auto-delete self if it seems part of an appliance
-#if [ "$1" == "_toil_exec" ] && [ ! -z "${PIVOT_URL}" ] && [ ! -z "${WORKFLOW_NAME}" ]; then
-#    curl -X DELETE "${PIVOT_URL}/${WORKFLOW_NAME}"
-#fi
+if [ "$1" == "_toil_exec" ] && [ ! -z "${PIVOT_URL}" ] && [ ! -z "${WORKFLOW_NAME}" ]; then
+    curl -X DELETE "${PIVOT_URL}/${WORKFLOW_NAME}"
+fi
 
 exit ${exitcode}
