@@ -9,7 +9,7 @@ import requests
 import six
 
 # defaults
-CHRONOS_URL = 'https://stars-app.renci.org/chronos'
+CHRONOS_URL = ''
 IRODS_HOST = 'test.commonsshare.org'
 IRODS_PORT = '1247'
 IRODS_ZONE = 'commonssharetestZone'
