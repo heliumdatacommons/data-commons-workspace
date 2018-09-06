@@ -158,21 +158,21 @@ RUN echo "ACTIVATING VENV2.7" \
     && pip2 install pip==8.1.2 \
     && pip2 install chronos-python \
     # fix @ symbol bug
-    && pip2 install git+https://github.com/heliumdatacommons/schema_salad.git \
-    && sudo git clone https://github.com/stevencox/cwltool.git /opt/cwltool \
-    && sudo chown -R dockeruser:datacommons /opt/cwltool \
-    && cd /opt/cwltool \
-    && git checkout open_permissions \
-    && pip2 install -e . \
-    && cd /opt/toil \
+    #&& pip2 install cwltool \
+    && git clone https://github.com/heliumdatacommons/schema_salad.git \
+    && cd schema_salad \
+    && sed -i "s|version='2.7'|version='2.8'|g" setup.py \
+    && pip install .
+RUN cd /opt/toil \
+    && source venv2.7/bin/activate \
     && pip2 install -e .[cwl,mesos,aws] \
     && sudo ln -s /opt/toil/_toil_worker.sh /usr/bin/_toil_worker \
-    && echo 0
+    && echo 2
 
 # TODO used for updating code without long rebuild
-RUN cd /opt/toil/ && source venv2.7/bin/activate \
-    && git pull && pip install -e .[cwl,mesos,aws] \
-    && echo 0
+#RUN cd /opt/toil/ && source venv2.7/bin/activate \
+#    && git pull && pip install -e .[cwl,mesos,aws] \
+#    && echo 0
 
 RUN sudo apt-get install -y openssh-server \
     && sudo apt-get clean \

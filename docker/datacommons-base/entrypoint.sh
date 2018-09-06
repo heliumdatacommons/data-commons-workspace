@@ -159,6 +159,8 @@ if [ ! -z "${TOIL_NFS_WORKDIR_SERVER}" ] && [ ! -z "${TOIL_NFS_WORKDIR_MOUNT}" ]
     if [ ! -d "${TOIL_NFS_WORKDIR_MOUNT}" ]; then
         sudo mkdir -p "${TOIL_NFS_WORKDIR_MOUNT}"
     fi
-    sudo /etc/init.d/rpcbind start
-    sudo mount -t nfs "${TOIL_NFS_SERVER}" "${TOIL_NFS_MOUNT}"
+    sudo chown -R dockeruser:datacommons "${TOIL_NFS_WORKDIR_MOUNT}"
+    sudo mkdir /run/sendsigs.omit.d
+    sudo /etc/init.d/rpcbind start}
+    sudo mount -t nfs "${TOIL_NFS__WORKDIR_SERVER}" "${TOIL_NFS_WORKDIR_MOUNT}"
 fi
