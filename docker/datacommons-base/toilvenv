@@ -1,6 +1,6 @@
 #!/bin/bash
 set -a
-cd $TOIL_INSTALL && source venv2.7/bin/activate
+cd /opt/toil && source venv2.7/bin/activate
 
 if [ -z "$1" ]; then
     # interactive

@@ -2,7 +2,7 @@
 
 cd ~/
 . ~/.profile
-printf "ENTRYPOINT\n\n"
+printf "ENTRYPOINT ENVIRONMENT\n\n"
 env
 
 # make env vars persistent
@@ -39,7 +39,7 @@ then
     fi
     if [ ! -z "$IRODS_AUTHENTICATION_SCHEME" ]; then
         irods_environment=${irods_environment}', "irods_authentication_scheme": "'${IRODS_AUTHENTICATION_SCHEME}'"'
-        if [ ! -z "$IRODS_OPENID_PROVIDER" ]; then
+        if [ ! -z "$IRODS_OPENID_PROVIDER" ] && [ "openid" -eq "${IRODS_AUTHENTICATOR_SCHEME}" ]; then
             irods_environment=${irods_environment}', "openid_provider": "'${IRODS_OPENID_PROVIDER}'"'
         fi
     fi
@@ -96,13 +96,14 @@ if [ ! -f ~/.irods/.irodsA ]; then
             echo "Authenticating to iRODS using provided user key"
             echo "ukey=${IRODS_USER_KEY}" > ~/.irods/.irodsA
             echo "http://localhost:80 ${IRODS_USER_NAME} user_key=${IRODS_USER_KEY}" | sudo tee -a /etc/davfs2/secrets >> /dev/null
-            # non-interactive iinit not currently implemented for user key
+            # test initial icommands connection
+            iinit "user_key=${IRODS_USER_KEY}"
         elif [ ! -z "${IRODS_ACCESS_TOKEN}" ]; then
             echo "Authenticating to iRODS using provided access token"
             echo "act=${IRODS_ACCESS_TOKEN}" > ~/.irods/.irodsA
             echo "http://localhost:80 ${IRODS_USER_NAME} access_token=${IRODS_ACCESS_TOKEN}" | sudo tee -a /etc/davfs2/secrets >> /dev/null
-            # test initial icommands conn, disable until also implemented for user key
-            iinit "${IRODS_ACCESS_TOKEN}"
+            # test initial icommands connection
+            iinit "access_token=${IRODS_ACCESS_TOKEN}"
         else
             echo "entered unknown branch"
         fi
@@ -155,12 +156,23 @@ sudo mount -t davfs -o uid=dockeruser,gid=datacommons "http://localhost:80" ${IR
 
 # if an NFS server is specified for working/intermediate data, mount it now
 if [ ! -z "${TOIL_NFS_WORKDIR_SERVER}" ] && [ ! -z "${TOIL_NFS_WORKDIR_MOUNT}" ]; then
-    echo "Mounting NFS server to ${TOIL_NFS_MOUNT} for intermediate data"
+    echo "Mounting NFS server [${TOIL_NFS_WORKDIR_SERVER}] to [${TOIL_NFS_WORKDIR_MOUNT}] for intermediate data"
     if [ ! -d "${TOIL_NFS_WORKDIR_MOUNT}" ]; then
         sudo mkdir -p "${TOIL_NFS_WORKDIR_MOUNT}"
     fi
-    sudo chown -R dockeruser:datacommons "${TOIL_NFS_WORKDIR_MOUNT}"
+
     sudo mkdir /run/sendsigs.omit.d
-    sudo /etc/init.d/rpcbind start}
-    sudo mount -t nfs "${TOIL_NFS__WORKDIR_SERVER}" "${TOIL_NFS_WORKDIR_MOUNT}"
+    sudo /etc/init.d/rpcbind start
+    sleep 5
+    x=0
+    while ! sudo mount -t nfs -o auto,noatime,nolock,bg,intr,tcp,actimeo=1800 "${TOIL_NFS_WORKDIR_SERVER}" "${TOIL_NFS_WORKDIR_MOUNT}" && [ $x -lt 40 ]; do
+        x=$((x+1))
+        sleep 3
+    done
+    if ! mount | grep "${TOIL_NFS_WORKDIR_SERVER}"; then
+        echo "FAILED TO MOUNT NFS WORKDIR"
+    fi
+    sudo chown -R dockeruser:datacommons "${TOIL_NFS_WORKDIR_MOUNT}"
+    echo "MOUNTS:"
+    mount
 fi

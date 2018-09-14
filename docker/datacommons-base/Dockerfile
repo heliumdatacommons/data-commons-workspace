@@ -120,6 +120,13 @@ USER dockeruser
 WORKDIR /home/dockeruser
 
 
+RUN sudo apt-get install -y openssh-server \
+    && sudo apt-get clean \
+    && sudo ssh-keygen -A \
+    && mkdir -p ~/.ssh \
+    && touch ~/.ssh/authorized_keys \
+    && chmod 700 ~/.ssh
+
 RUN touch /home/dockeruser/.profile \
     && if [ ! -d ~/.irods ]; then mkdir ~/.irods; fi \
     # set global httpd ServerName to localhost
@@ -152,41 +159,29 @@ RUN if [ ! -d ${IRODS_MOUNT} ]; then \
     #&& git checkout rebase-2018-06-29 \
     && pip2 install virtualenv \
     && python2.7 -m virtualenv venv2.7 \
-    && echo 0
-RUN echo "ACTIVATING VENV2.7" \
-    && cd /opt/toil && source venv2.7/bin/activate \
+    && source venv2.7/bin/activate \
     && pip2 install pip==8.1.2 \
     && pip2 install chronos-python \
-    # fix @ symbol bug
-    #&& pip2 install cwltool \
-    && git clone https://github.com/heliumdatacommons/schema_salad.git \
-    && cd schema_salad \
-    && sed -i "s|version='2.7'|version='2.8'|g" setup.py \
-    && pip install .
+    && echo 2
 RUN cd /opt/toil \
+    && git pull \
     && source venv2.7/bin/activate \
     && pip2 install -e .[cwl,mesos,aws] \
     && sudo ln -s /opt/toil/_toil_worker.sh /usr/bin/_toil_worker \
-    && echo 2
+    && sudo git clone https://github.com/heliumdatacommons/schema_salad.git /opt/schema_salad \
+    && sudo chown -R dockeruser:datacommons /opt/schema_salad \
+    && cd /opt/schema_salad \
+    && sed -i "s|version='2.7'|version='2.8'|g" setup.py \
+    && pip install . \
+    && echo 0
 
-# TODO used for updating code without long rebuild
-#RUN cd /opt/toil/ && source venv2.7/bin/activate \
-#    && git pull && pip install -e .[cwl,mesos,aws] \
-#    && echo 0
-
-RUN sudo apt-get install -y openssh-server \
-    && sudo apt-get clean \
-    && sudo ssh-keygen -A \
-    && mkdir -p ~/.ssh \
-    && touch ~/.ssh/authorized_keys \
-    && chmod 700 ~/.ssh
 
 # TODO remove
-RUN cd /opt/davrods \
-    && sudo git pull \
-    && cd build \
-    && sudo make package \
-    && sudo dpkg -i ./davrods-*
+#RUN cd /opt/davrods \
+#    && sudo git pull \
+#    && cd build \
+#    && sudo make package \
+#    && sudo dpkg -i ./davrods-*
 
 COPY ./base_postinstall.sh ./dc_toil_setup.sh ./base-start.sh /home/dockeruser/
 RUN sudo chmod +x /home/dockeruser/base_postinstall.sh \
