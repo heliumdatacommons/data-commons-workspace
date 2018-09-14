@@ -148,7 +148,7 @@ def run(options):
 
 
 def login():
-    base_url = 'https://test.commonsshare.org'
+    base_url = 'https://auth.commonsshare.org'
     resp1 = requests.get(base_url + '/authorize?provider=globus&scope=openid%20email%20profile')
     if resp1.status_code != 200:
         raise RuntimeError('Failed to acquire login url')
