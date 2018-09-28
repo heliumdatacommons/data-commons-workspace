@@ -10,7 +10,7 @@ import six
 
 # defaults
 CHRONOS_URL = ''
-IRODS_HOST = 'test.commonsshare.org'
+IRODS_HOST = 'https://auth.commonsshare.org'
 IRODS_PORT = '1247'
 IRODS_ZONE = 'commonssharetestZone'
 IRODS_CWD = '/'+IRODS_ZONE
