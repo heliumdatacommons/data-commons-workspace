@@ -1,0 +1,11 @@
+#!/bin/bash
+set -a
+cd /opt/toil && source venv2.7/bin/activate
+
+if [ -z "$1" ]; then
+    # interactive
+    /bin/bash -i
+else
+    # execute parameters in bash
+    /bin/bash -c "$@"
+fi

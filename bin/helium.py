@@ -10,7 +10,8 @@ import six
 
 # defaults
 CHRONOS_URL = ''
-IRODS_HOST = 'https://auth.commonsshare.org'
+IRODS_HOST = 'test.commonsshare.org'
+IRODS_HOST = '18.207.138.172'
 IRODS_PORT = '1247'
 IRODS_ZONE = 'commonssharetestZone'
 IRODS_CWD = '/'+IRODS_ZONE
@@ -22,7 +23,7 @@ def main(argv):
     subparsers = parser.add_subparsers(title='subcommands', dest='subcommand')
     # subcommand build
     build_parser = subparsers.add_parser('build', help='Build an image')
-    build_parser.add_argument('image', type=str, choices=['all','base','jupyter'])
+    build_parser.add_argument('image', type=str, choices=['all','base','jupyter', 'cwl-wrapper'])
     
     # subcommand run
     run_parser = subparsers.add_parser('run', help='Run an image')
